@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevas Tendencias - ForoDisco</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a:hover {
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-ghost {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-primary:hover {
+            background: #e0e0e0;
+        }
+
+        .trends-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+        .trend-card {
+            background-color: hsla(var(--card), 0.8);
+            border: 1px solid hsla(var(--primary), 0.1);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .trend-card:hover {
+            transform: translateY(-5px);
+            border-color: hsla(var(--primary), 0.2);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        .trend-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: hsl(var(--primary));
+            margin-bottom: 0.5rem;
+        }
+        .trend-description {
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 1rem;
+        }
+        .trend-stats {
+            display: flex;
+            justify-content: space-between;
+            color: hsl(var(--muted-foreground));
+            font-size: 0.9rem;
+        }
+        .trend-link {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            text-decoration: none;
+            border-radius: var(--radius);
+            transition: background-color 0.3s ease;
+        }
+        .trend-link:hover {
+            background-color: hsla(var(--primary), 0.8);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="foros.html">Tus Foros</a>
+                <a href="tendencias.html">Nuevas Tendencias</a>
+                <a href="normas.html">Normas de Comunidad</a>
+            </div>
+            <div class="auth-buttons">
+                <!-- Esta sección será actualizada por auth.js -->
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container py-5">
+            <h1 class="mb-4">Nuevas Tendencias</h1>
+            <div class="row">
+                <!-- Sección de Locales Populares -->
+                <div class="col-md-8">
+                    <h2>Locales más seguidos esta semana</h2>
+                    <div class="row g-4">
+                        <!-- Las tarjetas de locales se añadirán dinámicamente aquí -->
+                    </div>
+                </div>
+
+                <!-- Sección de Últimas Discusiones -->
+                <div class="col-md-4">
+                    <h2>Últimas Discusiones</h2>
+                    <div class="list-group">
+                        <!-- Las discusiones se añadirán dinámicamente aquí -->
+                    </div>
+                </div>
+            </div>
+            <div class="trends-grid">
+                <div class="trend-card card">
+                    <h2 class="trend-title">Foro: Música Electrónica Emergente</h2>
+                    <p class="trend-description">Descubre los nuevos sonidos y artistas de la escena electrónica en Barcelona.</p>
+                    <div class="trend-stats">
+                        <span>324 miembros</span>
+                        <span>Creado hace 2 días</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Unirse al foro</a>
+                </div>
+                <div class="trend-card card">
+                    <h2 class="trend-title">Evento: Noche de Cócteles Moleculares</h2>
+                    <p class="trend-description">Una experiencia única combinando mixología y ciencia en los mejores bares de la ciudad.</p>
+                    <div class="trend-stats">
+                        <span>156 interesados</span>
+                        <span>Este viernes</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Más información</a>
+                </div>
+                <div class="trend-card card">
+                    <h2 class="trend-title">Foro: Afterhours Secretos</h2>
+                    <p class="trend-description">Comparte y descubre los mejores lugares para continuar la fiesta después del amanecer.</p>
+                    <div class="trend-stats">
+                        <span>789 miembros</span>
+                        <span>Creado hace 1 semana</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Unirse al foro</a>
+                </div>
+                <div class="trend-card card">
+                    <h2 class="trend-title">Tendencia: Fiestas Silenciosas</h2>
+                    <p class="trend-description">Explora el fenómeno de las fiestas con auriculares que están conquistando Barcelona.</p>
+                    <div class="trend-stats">
+                        <span>452 seguidores</span>
+                        <span>En auge</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Descubrir más</a>
+                </div>
+                <div class="trend-card card">
+                    <h2 class="trend-title">Foro: DJs Locales en Ascenso</h2>
+                    <p class="trend-description">Apoya y descubre el talento local emergente en la escena de la música electrónica.</p>
+                    <div class="trend-stats">
+                        <span>567 miembros</span>
+                        <span>Creado hace 3 días</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Unirse al foro</a>
+                </div>
+                <div class="trend-card card">
+                    <h2 class="trend-title">Evento: Rave Ecológica</h2>
+                    <p class="trend-description">Una fiesta única que combina música electrónica con conciencia ambiental.</p>
+                    <div class="trend-stats">
+                        <span>298 interesados</span>
+                        <span>Próximo mes</span>
+                    </div>
+                    <a href="#" class="btn btn-accent">Más información</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h2>ForoDisco</h2>
+                <p>Tu guía definitiva para el ocio nocturno en Barcelona.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Enlaces rápidos</h3>
+                <ul>
+                    <li><a href="foros.html">Tus Foros</a></li>
+                    <li><a href="tendencias.html">Nuevas Tendencias</a></li>
+                    <li><a href="normas.html">Normas de Comunidad</a></li>
+                    <li><a href="login.html">Iniciar sesión</a></li>
+                    <li><a href="register.html">Registrarse</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>Email: info@forodisco.com</p>
+                <p>Teléfono: +34 123 456 789</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 ForoDisco. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
