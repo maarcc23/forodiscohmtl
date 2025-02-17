@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normas de la Comunidad - ForoDisco</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .rules-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            color: white;
+        }
+
+        .rules-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .rules-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff4b6e, #7e2ae8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .rules-header p {
+            font-size: 1.1rem;
+            color: #ccc;
+        }
+
+        .rules-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .rules-section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .rules-section h2 {
+            color: #ff4b6e;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .rules-section p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            color: #eee;
+        }
+
+        .rules-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .rules-section li {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #eee;
+        }
+
+        .rules-section li::before {
+            content: "•";
+            color: #ff4b6e;
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+        }
+
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(126, 42, 232, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 75, 110, 0.3) 0%, transparent 50%),
+                #0a0a0a;
+            animation: backgroundShift 15s ease infinite;
+        }
+
+        @keyframes backgroundShift {
+            0% {
+                background-position: 0% 0%;
+            }
+            50% {
+                background-position: 100% 100%;
+            }
+            100% {
+                background-position: 0% 0%;
+            }
+        }
+
+        .glow {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: rgba(255, 75, 110, 0.1);
+            filter: blur(100px);
+            animation: glowAnimation 10s ease infinite;
+        }
+
+        .glow:nth-child(2) {
+            background: rgba(126, 42, 232, 0.1);
+            animation-delay: -5s;
+        }
+
+        @keyframes glowAnimation {
+            0% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(50px, 50px);
+            }
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a:hover {
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-ghost {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-primary:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="foros.html">Tus Foros</a>
+                <a href="tendencias.html">Nuevas Tendencias</a>
+                <a href="normas.html">Normas de Comunidad</a>
+            </div>
+            <div class="auth-buttons">
+                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
+                <a href="register.html" class="btn btn-primary">Registrarse</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="background-animation">
+        <div class="glow"></div>
+        <div class="glow"></div>
+    </div>
+
+    <main>
+        <div class="container py-5">
+            <div class="rules-container">
+                <div class="rules-header">
+                    <h1>Normas de la Comunidad</h1>
+                    <p>Para mantener un ambiente positivo y seguro para todos los miembros</p>
+                </div>
+
+                <div class="rules-section">
+                    <h2>Comportamientos Prohibidos</h2>
+                    <p>El incumplimiento de estas normas puede resultar en acciones disciplinarias:</p>
+                    <ul>
+                        <li>Amenazas o incitación a la violencia contra individuos o grupos.</li>
+                        <li>Discurso de odio o discriminación basada en raza, etnia, género, orientación sexual, religión, etc.</li>
+                        <li>Acoso o intimidación a otros usuarios.</li>
+                        <li>Compartir información personal de otros sin su consentimiento (doxxing).</li>
+                        <li>Spam o publicidad no autorizada.</li>
+                        <li>Contenido sexual explícito o pornográfico.</li>
+                        <li>Apología de actividades ilegales o consumo irresponsable de sustancias.</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>Guías de Interacción</h2>
+                    <p>Para mantener un ambiente positivo y seguro:</p>
+                    <ul>
+                        <li>Sé respetuoso con todos los usuarios, incluso si no estás de acuerdo con sus opiniones.</li>
+                        <li>Mantén las discusiones relacionadas con el tema del foro o hilo.</li>
+                        <li>Evita el uso excesivo de mayúsculas, ya que puede interpretarse como gritar.</li>
+                        <li>No publiques el mismo contenido repetidamente (flood).</li>
+                        <li>Usa un lenguaje apropiado y evita las obscenidades excesivas.</li>
+                        <li>Si tienes un conflicto con otro usuario, intenta resolverlo de manera privada y respetuosa.</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>Consecuencias y Moderación</h2>
+                    <p>El incumplimiento de estas normas puede resultar en las siguientes acciones, dependiendo de la gravedad y frecuencia de las infracciones:</p>
+                    <ul>
+                        <li>Advertencia por parte de los moderadores.</li>
+                        <li>Eliminación del contenido infractor.</li>
+                        <li>Suspensión temporal de la cuenta.</li>
+                        <li>Expulsión permanente de la comunidad.</li>
+                    </ul>
+                    <p>Los moderadores se reservan el derecho de tomar decisiones sobre el contenido y los usuarios que violen estas normas. Si crees que has sido tratado injustamente, puedes apelar contactando a nuestro equipo de soporte.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h2>ForoDisco</h2>
+                <p>Tu guía definitiva para el ocio nocturno en Barcelona.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Enlaces rápidos</h3>
+                <ul>
+                    <li><a href="foros.html">Tus Foros</a></li>
+                    <li><a href="tendencias.html">Nuevas Tendencias</a></li>
+                    <li><a href="normas.html">Normas de Comunidad</a></li>
+                    <li><a href="login.html">Iniciar sesión</a></li>
+                    <li><a href="register.html">Registrarse</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>Email: info@forodisco.com</p>
+                <p>Teléfono: +34 123 456 789</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 ForoDisco. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Verificar el estado de autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', async () => {
+            await updateAuthUI();
+        });
+    </script>
+</body>
+</html>
