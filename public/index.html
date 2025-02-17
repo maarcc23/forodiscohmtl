@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForoDisco - Tu guía de ocio nocturno en Barcelona</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .featured-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .featured-card h3 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .featured-card p {
+            color: #ccc;
+            margin-bottom: 1.5rem;
+        }
+
+        .featured-card .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background-color: #ff4b6e;
+            color: white;
+            text-decoration: none;
+            border-radius: 2rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .featured-card .btn:hover {
+            background-color: #ff1f4b;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .search-bar button {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 2rem;
+            background-color: #ff4b6e;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .search-bar button:hover {
+            background-color: #ff1f4b;
+        }
+
+        nav {
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 1rem 2rem;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: #ff4b6e;
+        }
+
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0a0a0a;
+        }
+
+        .blur-1, .blur-2 {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(100px);
+        }
+
+        .blur-1 {
+            top: 20%;
+            left: 20%;
+            background-color: rgba(255, 75, 110, 0.3);
+        }
+
+        .blur-2 {
+            bottom: 20%;
+            right: 20%;
+            background-color: rgba(75, 110, 255, 0.3);
+        }
+
+        .btn-ghost {
+            border: 1px solid white;
+            background-color: transparent;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin-right: 1rem;
+        }
+
+        .btn-ghost:hover {
+            background-color: white;
+            color: black;
+        }
+
+        .btn-primary {
+            background-color: white;
+            color: black;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #ff4b6e;
+            color: white;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .auth-buttons {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="background">
+        <div class="blur-1"></div>
+        <div class="blur-2"></div>
+    </div>
+
+    <header>
+        <nav>
+            <div class="nav-content">
+                <div class="nav-left">
+                    <a href="index.html" class="logo">ForoDisco</a>
+                    <div class="nav-links">
+                        <a href="foros.html">Tus Foros</a>
+                        <a href="tendencias.html">Nuevas Tendencias</a>
+                        <a href="normas.html">Normas de Comunidad</a>
+                    </div>
+                </div>
+                <div class="auth-buttons">
+                    <!-- Esta sección será actualizada por auth.js -->
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero">
+            <h1>Descubre la noche en Barcelona</h1>
+            <p>Tu guía definitiva para encontrar los mejores lugares y eventos</p>
+            <div class="search-bar">
+                <input type="text" placeholder="Buscar lugares, eventos o foros...">
+                <button>Buscar</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="featured-grid">
+            <div class="featured-card">
+                <h3>Foros Populares</h3>
+                <p>Únete a las discusiones más activas sobre la vida nocturna en Barcelona</p>
+                <a href="#" class="btn">Explorar Foros</a>
+            </div>
+            <div class="featured-card">
+                <h3>Eventos Destacados</h3>
+                <p>Descubre los eventos más esperados de la semana</p>
+                <a href="#" class="btn">Ver Eventos</a>
+            </div>
+            <div class="featured-card">
+                <h3>Locales Recomendados</h3>
+                <p>Encuentra los mejores bares y discotecas según nuestros usuarios</p>
+                <a href="#" class="btn">Descubrir Locales</a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h2>ForoDisco</h2>
+                <p>Tu guía definitiva para el ocio nocturno en Barcelona.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Enlaces rápidos</h3>
+                <ul>
+                    <li><a href="foros.html">Tus Foros</a></li>
+                    <li><a href="#">Nuevas Tendencias</a></li>
+                    <li><a href="normas.html">Normas de Comunidad</a></li>
+                    <li><a href="login.html">Iniciar sesión</a></li>
+                    <li><a href="register.html">Registrarse</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contacto</h3>
+                <p>Email: info@forodisco.com</p>
+                <p>Teléfono: +34 123 456 789</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 ForoDisco. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
