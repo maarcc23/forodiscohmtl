@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crear Admin</title>
+</head>
+<body>
+    <button onclick="createAdmin()">Crear Usuario Admin</button>
+    <div id="result"></div>
+
+    <script>
+        async function createAdmin() {
+            try {
+                const response = await fetch('/api/create-admin', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'Error al crear admin';
+            }
+        }
+    </script>
+</body>
+</html>
