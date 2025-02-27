@@ -16,14 +16,33 @@ async function checkAuthStatus() {
 // Función para actualizar la UI basada en el estado de autenticación
 async function updateAuthUI() {
     try {
+        const authButtons = document.querySelector('.auth-buttons');
+        if (!authButtons) {
+            console.log('No se encontró el elemento auth-buttons');
+            return;
+        }
+
         const response = await fetch('/api/check-auth', {
-            credentials: 'include'
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
+
+        if (!response.ok) {
+            // Si no está autenticado, mostrar botones de login/registro
+            authButtons.innerHTML = `
+                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
+                <a href="register.html" class="btn btn-primary">Registrarse</a>
+            `;
+            return;
+        }
+
         const data = await response.json();
         
-        const authButtons = document.querySelector('.auth-buttons');
-        
-        if (data.authenticated) {
+        if (data.authenticated && data.username) {
             // Usuario autenticado - Mostrar nombre de usuario y botón de logout
             authButtons.innerHTML = `
                 <div class="user-info">
@@ -39,7 +58,15 @@ async function updateAuthUI() {
             `;
         }
     } catch (error) {
-        console.error('Error al verificar autenticación:', error);
+        console.error('Error al actualizar UI de autenticación:', error);
+        // En caso de error, mostrar botones de login/registro
+        const authButtons = document.querySelector('.auth-buttons');
+        if (authButtons) {
+            authButtons.innerHTML = `
+                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
+                <a href="register.html" class="btn btn-primary">Registrarse</a>
+            `;
+        }
     }
 }
 

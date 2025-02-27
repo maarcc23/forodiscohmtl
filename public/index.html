@@ -193,6 +193,70 @@
             display: flex;
             align-items: center;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .forum-detail-view {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .forum-detail-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .btn-save {
+            background: transparent;
+            border: 1px solid #1a73e8;
+            color: #1a73e8;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save:hover {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .btn-save.saved {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-save:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -221,10 +285,11 @@
         <div class="hero">
             <h1>Descubre la noche en Barcelona</h1>
             <p>Tu guía definitiva para encontrar los mejores lugares y eventos</p>
-            <div class="search-bar">
-                <input type="text" placeholder="Buscar lugares, eventos o foros...">
-                <button>Buscar</button>
-            </div>
+            <form class="search-bar" onsubmit="return false;">
+                <input type="text" id="searchInput" placeholder="Buscar lugares...">
+                <button type="submit" id="searchButton">Buscar</button>
+            </form>
+            <div id="searchResults" class="search-results"></div>
         </div>
     </header>
 
@@ -232,8 +297,8 @@
         <div class="featured-grid">
             <div class="featured-card">
                 <h3>Foros Populares</h3>
-                <p>Únete a las discusiones más activas sobre la vida nocturna en Barcelona</p>
-                <a href="#" class="btn">Explorar Foros</a>
+                <p>Descubre y participa en las conversaciones más populares sobre la vida nocturna en Barcelona</p>
+                <button class="btn explore-forums-btn">Explorar Foros</button>
             </div>
             <div class="featured-card">
                 <h3>Eventos Destacados</h3>
@@ -244,6 +309,77 @@
                 <h3>Locales Recomendados</h3>
                 <p>Encuentra los mejores bares y discotecas según nuestros usuarios</p>
                 <a href="#" class="btn">Descubrir Locales</a>
+            </div>
+        </div>
+
+        <!-- Modal para mostrar los foros -->
+        <div id="forosModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Foros Populares</h2>
+                <div class="forum-grid">
+                    <!-- Shoko -->
+                    <div class="forum-card" data-forum-id="1">
+                        <h3>Shoko Barcelona</h3>
+                        <p>El lugar de encuentro nocturno más exclusivo de Barcelona</p>
+                        <p class="location">Passeig Marítim 15, Barcelona - 0 miembros</p>
+                        <div class="forum-actions">
+                            <button onclick="saveForum(1, this)" class="btn-save">
+                                <i class="fas fa-star"></i> Guardar
+                            </button>
+                            <button onclick="viewForum(1)" class="btn-view">Ver Foro</button>
+                        </div>
+                    </div>
+                    <!-- Opium -->
+                    <div class="forum-card" data-forum-id="2">
+                        <h3>Opium Barcelona</h3>
+                        <p>La mejor experiencia nocturna frente al mar Mediterráneo</p>
+                        <p class="location">Passeig Marítim 34, Barcelona - 0 miembros</p>
+                        <div class="forum-actions">
+                            <button onclick="saveForum(2, this)" class="btn-save">
+                                <i class="fas fa-star"></i> Guardar
+                            </button>
+                            <button onclick="viewForum(2)" class="btn-view">Ver Foro</button>
+                        </div>
+                    </div>
+                    <!-- Pacha -->
+                    <div class="forum-card" data-forum-id="3">
+                        <h3>Pacha Barcelona</h3>
+                        <p>El club más icónico de Barcelona con la mejor música house</p>
+                        <p class="location">Passeig Marítim 38, Barcelona - 0 miembros</p>
+                        <div class="forum-actions">
+                            <button onclick="saveForum(3, this)" class="btn-save">
+                                <i class="fas fa-star"></i> Guardar
+                            </button>
+                            <button onclick="viewForum(3)" class="btn-view">Ver Foro</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vista detallada del foro -->
+        <div id="forumDetailView" class="forum-detail-view">
+            <div class="forum-detail-content">
+                <h2>Shoko Barcelona</h2>
+                <p class="forum-description">El lugar de encuentro nocturno más exclusivo de Barcelona</p>
+                <div class="forum-meta">
+                    <span class="location">Passeig Marítim 15, Barcelona</span>
+                    <span class="members">0 miembros</span>
+                </div>
+                <div class="forum-actions">
+                    <button class="favorite-btn large">☆ Guardar</button>
+                </div>
+                <div class="comments-section">
+                    <h3>Comentarios</h3>
+                    <div class="forum-comments">
+                        <!-- Los comentarios se añadirán aquí dinámicamente -->
+                    </div>
+                    <div class="comment-form">
+                        <textarea placeholder="Escribe tu comentario..."></textarea>
+                        <button class="submit-comment">Enviar</button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -275,7 +411,87 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="script.js"></script>
+    <script src="js/forum.js"></script>
+    <script src="js/search.js"></script>
+
+    <!-- Script de prueba -->
+    <script>
+        // Verificar que todo está cargado correctamente
+        window.addEventListener('load', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const searchResults = document.getElementById('searchResults');
+
+            // Verificar elementos
+            console.log('Elementos de búsqueda:', {
+                input: searchInput ? 'encontrado' : 'no encontrado',
+                button: searchButton ? 'encontrado' : 'no encontrado',
+                results: searchResults ? 'encontrado' : 'no encontrado'
+            });
+
+            // Probar funcionalidad
+            if (searchButton) {
+                searchButton.addEventListener('click', function() {
+                    console.log('Click en botón de búsqueda detectado');
+                });
+            }
+        });
+    </script>
+
+    <script>
+        async function saveForum(forumId, button) {
+            try {
+                // Verificar si el usuario está logueado
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user) {
+                    alert('Debes iniciar sesión para guardar foros');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Deshabilitar el botón mientras se procesa
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+                
+                const response = await fetch(`/api/forums/${forumId}/save`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        userId: user.id || 1 // Si no hay ID, usamos 1 para el admin
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Actualizar el botón para mostrar que está guardado
+                    button.innerHTML = '<i class="fas fa-check"></i> Guardado';
+                    button.style.backgroundColor = '#4CAF50';
+                    button.style.color = 'white';
+                    button.classList.add('saved');
+                } else {
+                    throw new Error(data.message || 'Error al guardar el foro');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Error al guardar el foro');
+                // Restaurar el botón a su estado original
+                button.innerHTML = '<i class="fas fa-star"></i> Guardar';
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // Función para ver un foro
+        function viewForum(forumId) {
+            window.location.href = `/forum.html?id=${forumId}`;
+        }
+    </script>
 </body>
 </html>
