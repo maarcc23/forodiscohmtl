@@ -254,6 +254,46 @@ app.delete('/api/forums/:forumId/save', async (req, res) => {
     }
 });
 
+// Ruta para buscar venues
+app.get('/api/search/venues', async (req, res) => {
+    try {
+        const { query } = req.query;
+        const connection = await pool.getConnection();
+        
+        try {
+            let sql = `
+                SELECT * FROM venues 
+                WHERE name LIKE ? 
+                OR description LIKE ? 
+                OR location LIKE ?
+            `;
+            
+            const searchTerm = `%${query}%`;
+            const [venues] = await connection.query(sql, [searchTerm, searchTerm, searchTerm]);
+            
+            console.log('Resultados de búsqueda:', venues);
+
+            res.json({
+                success: true,
+                venues: venues.map(venue => ({
+                    id: venue.id,
+                    name: venue.name,
+                    description: venue.description,
+                    location: venue.location
+                }))
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error en la búsqueda:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al realizar la búsqueda'
+        });
+    }
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
