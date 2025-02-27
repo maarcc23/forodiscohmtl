@@ -257,6 +257,40 @@
             opacity: 0.7;
             cursor: not-allowed;
         }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .auth-buttons a {
+            text-decoration: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .auth-buttons .login-btn {
+            color: #ff4b6e;
+            border: 1px solid #ff4b6e;
+            background: transparent;
+        }
+
+        .auth-buttons .login-btn:hover {
+            background: rgba(255, 75, 110, 0.1);
+        }
+
+        .auth-buttons .register-btn {
+            color: white;
+            background: #ff4b6e;
+            border: none;
+        }
+
+        .auth-buttons .register-btn:hover {
+            background: #ff1f4b;
+        }
     </style>
 </head>
 <body>
@@ -277,7 +311,16 @@
                     </div>
                 </div>
                 <div class="auth-buttons">
-                    <!-- Esta sección será actualizada por auth.js -->
+                    <div id="userSection" style="display: none;">
+                        <span id="username" style="color: white; margin-right: 1rem;"></span>
+                        <button onclick="logout()" class="login-btn" style="cursor: pointer;">
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                    <div id="authButtons" style="display: none;">
+                        <a href="login.html" class="login-btn">Iniciar Sesión</a>
+                        <a href="register.html" class="register-btn">Registrarse</a>
+                    </div>
                 </div>
             </div>
         </nav>

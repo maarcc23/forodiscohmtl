@@ -13,94 +13,38 @@ async function checkAuthStatus() {
     }
 }
 
-// Función para actualizar la UI basada en el estado de autenticación
-async function updateAuthUI() {
-    try {
-        const authButtons = document.querySelector('.auth-buttons');
-        if (!authButtons) {
-            console.log('No se encontró el elemento auth-buttons');
-            return;
-        }
+// Función para actualizar la interfaz según el estado de autenticación
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const userSection = document.getElementById('userSection');
+    const authButtons = document.getElementById('authButtons');
+    const usernameElement = document.getElementById('username');
 
-        const response = await fetch('/api/check-auth', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            // Si no está autenticado, mostrar botones de login/registro
-            authButtons.innerHTML = `
-                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
-                <a href="register.html" class="btn btn-primary">Registrarse</a>
-            `;
-            return;
-        }
-
-        const data = await response.json();
-        
-        if (data.authenticated && data.username) {
-            // Usuario autenticado - Mostrar nombre de usuario y botón de logout
-            authButtons.innerHTML = `
-                <div class="user-info">
-                    <span class="username">${data.username}</span>
-                    <button onclick="logout()" class="btn btn-ghost">Cerrar sesión</button>
-                </div>
-            `;
-        } else {
-            // Usuario no autenticado - Mostrar botones de login y registro
-            authButtons.innerHTML = `
-                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
-                <a href="register.html" class="btn btn-primary">Registrarse</a>
-            `;
-        }
-    } catch (error) {
-        console.error('Error al actualizar UI de autenticación:', error);
-        // En caso de error, mostrar botones de login/registro
-        const authButtons = document.querySelector('.auth-buttons');
-        if (authButtons) {
-            authButtons.innerHTML = `
-                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
-                <a href="register.html" class="btn btn-primary">Registrarse</a>
-            `;
-        }
+    if (user) {
+        // Usuario autenticado
+        if (userSection) userSection.style.display = 'flex';
+        if (authButtons) authButtons.style.display = 'none';
+        if (usernameElement) usernameElement.textContent = user.email || 'Usuario';
+    } else {
+        // Usuario no autenticado
+        if (userSection) userSection.style.display = 'none';
+        if (authButtons) authButtons.style.display = 'flex';
     }
 }
 
-// Función para manejar el logout
-async function logout() {
-    try {
-        const response = await fetch('/api/logout', {
-            method: 'POST',
-            credentials: 'include'
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Actualizar la UI después del logout
-            await updateAuthUI();
-            
-            // Si estamos en una página que requiere autenticación, redirigir al inicio
-            const protectedPages = ['foros.html', 'perfil.html'];
-            const currentPage = window.location.pathname.split('/').pop();
-            
-            if (protectedPages.includes(currentPage)) {
-                window.location.href = 'index.html';
-            }
-        } else {
-            console.error('Error al cerrar sesión:', data.message);
-        }
-    } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-    }
+// Función para cerrar sesión
+function logout() {
+    localStorage.removeItem('user');
+    updateAuthUI();
+    // Redirigir a la página principal
+    window.location.href = '/index.html';
 }
 
-// Verificar el estado de autenticación cuando se carga la página
+// Actualizar la UI cuando se carga la página
 document.addEventListener('DOMContentLoaded', updateAuthUI);
+
+// Actualizar la UI cuando cambia el almacenamiento local
+window.addEventListener('storage', updateAuthUI);
 
 // Estilo adicional para el nombre de usuario
 const style = document.createElement('style');
