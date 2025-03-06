@@ -6,50 +6,227 @@
     <title>ForoDisco - Tu guía de ocio nocturno en Barcelona</title>
     <link rel="stylesheet" href="styles.css">
     <style>
-        .featured-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        /* Estilos existentes */
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
             gap: 2rem;
-            padding: 2rem;
         }
 
-        .featured-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 1rem;
-            padding: 2rem;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease;
-        }
-
-        .featured-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .featured-card h3 {
-            color: #fff;
-            margin-bottom: 1rem;
-        }
-
-        .featured-card p {
-            color: #ccc;
-            margin-bottom: 1.5rem;
-        }
-
-        .featured-card .btn {
-            display: inline-block;
-            padding: 0.8rem 1.5rem;
-            background-color: #ff4b6e;
+        .nav-links a {
             color: white;
             text-decoration: none;
-            border-radius: 2rem;
-            transition: background-color 0.3s ease;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
         }
 
-        .featured-card .btn:hover {
-            background-color: #ff1f4b;
+        .nav-links a:hover {
+            color: #ff4b6e;
         }
 
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-login, .btn-register, .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-login {
+            background-color: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-login:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-register, .btn-logout {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-register:hover, .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        /* Estilos para los modales */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            animation: modalAppear 0.3s ease-out;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #ff4b6e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: #ff3459;
+        }
+
+        .error-message {
+            color: #ff4b6e;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .modal-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .modal-link a {
+            color: #ff4b6e;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Estilos para la barra de navegación */
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a:hover {
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Estilos para la sección de hero */
         .hero {
             text-align: center;
             padding: 4rem 2rem;
@@ -113,132 +290,50 @@
             background: #ff1f4b;
         }
 
-        .search-results {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-top: 0.5rem;
-            z-index: 1000;
-            display: none;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .search-result-item {
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            background: white;
-        }
-
-        .search-result-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-result-item:hover {
-            background: #f8f9fa;
-            transform: translateX(10px);
-        }
-
-        .search-result-item h3 {
-            color: #333;
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin: 0 0 0.5rem 0;
-        }
-
-        .search-result-item p {
-            color: #666;
-            font-size: 1rem;
-            line-height: 1.5;
-            margin: 0 0 0.8rem 0;
-        }
-
-        .search-result-item .location {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: #ff4b6e;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .search-result-item .location i {
-            color: #ff4b6e;
-        }
-
-        /* Animación para los resultados */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .search-results.active {
-            display: block;
-            animation: slideIn 0.3s ease forwards;
-        }
-
-        /* Estilo para el scroll */
-        .search-results {
-            max-height: 400px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #ff4b6e rgba(255, 255, 255, 0.1);
-        }
-
-        .search-results::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .search-results::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 3px;
-        }
-
-        .search-results::-webkit-scrollbar-thumb {
-            background-color: #ff4b6e;
-            border-radius: 3px;
-        }
-
-        /* Estilo para cuando no hay resultados */
-        .no-results {
-            padding: 2rem;
-            text-align: center;
-            color: #666;
-            font-size: 1rem;
-        }
-
         nav {
             background-color: rgba(0, 0, 0, 0.9);
             padding: 1rem 2rem;
         }
 
-        nav ul {
+        .featured-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
             display: flex;
-            gap: 2rem;
-            list-style: none;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
         }
 
-        nav a {
+        .featured-card h2 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .featured-card p {
+            color: #ccc;
+            margin-bottom: 2rem;
+        }
+
+        .featured-card .btn {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background-color: #ff4b6e;
             color: white;
             text-decoration: none;
-            transition: color 0.3s ease;
+            border-radius: 2rem;
+            transition: background-color 0.3s ease;
+            margin: 0 auto;
+            width: fit-content;
         }
 
-        nav a:hover {
-            color: #ff4b6e;
+        .featured-card .btn:hover {
+            background-color: #ff1f4b;
         }
 
+        /* Estilos para el fondo */
         .background {
             position: fixed;
             top: 0;
@@ -314,152 +409,29 @@
             display: flex;
             align-items: center;
         }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-        }
-
-        .forum-detail-view {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.4);
-        }
-
-        .forum-detail-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-        }
-
-        .btn-save {
-            background: transparent;
-            border: 1px solid #1a73e8;
-            color: #1a73e8;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-save:hover {
-            background: #1a73e8;
-            color: white;
-        }
-
-        .btn-save.saved {
-            background: #4CAF50;
-            border-color: #4CAF50;
-            color: white;
-        }
-
-        .btn-save:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .auth-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .auth-buttons a {
-            text-decoration: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 2rem;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .auth-buttons .login-btn {
-            color: #ff4b6e;
-            border: 1px solid #ff4b6e;
-            background: transparent;
-        }
-
-        .auth-buttons .login-btn:hover {
-            background: rgba(255, 75, 110, 0.1);
-        }
-
-        .auth-buttons .register-btn {
-            color: white;
-            background: #ff4b6e;
-            border: none;
-        }
-
-        .auth-buttons .register-btn:hover {
-            background: #ff1f4b;
-        }
-
-        .search-container {
-            max-width: 600px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .search-bar {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .search-bar input {
-            flex: 1;
-            padding: 1rem;
-            border: none;
-            border-radius: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-        }
-
-        .search-bar input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .search-bar button {
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 2rem;
-            background-color: #ff4b6e;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .search-bar button:hover {
-            background-color: #ff1f4b;
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body>
-    <div class="background">
-        <div class="blur-1"></div>
-        <div class="blur-2"></div>
+    <!-- Modal de Inicio de Sesión -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal">
+            <h1>Iniciar Sesión</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <button type="submit" class="btn">Iniciar Sesión</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+            <div class="modal-link">
+                <p>¿No tienes cuenta? <a onclick="showRegisterModal()">Regístrate aquí</a></p>
+            </div>
+        </div>
     </div>
 
     <header>
@@ -469,25 +441,55 @@
                     <a href="index.html" class="logo">ForoDisco</a>
                     <div class="nav-links">
                         <a href="foros.html">Tus Foros</a>
-                        <a href="#">Nuevas Tendencias</a>
+                        <a href="tendencias.html">Nuevas Tendencias</a>
                         <a href="normas.html">Normas de Comunidad</a>
                     </div>
                 </div>
                 <div class="auth-buttons">
-                    <div id="userSection" style="display: none;">
-                        <span id="username" style="color: white; margin-right: 1rem;"></span>
-                        <button onclick="logout()" class="login-btn" style="cursor: pointer;">
-                            Cerrar Sesión
-                        </button>
-                    </div>
-                    <div id="authButtons" style="display: none;">
-                        <a href="login.html" class="login-btn">Iniciar Sesión</a>
-                        <a href="register.html" class="register-btn">Registrarse</a>
-                    </div>
+                    <!-- Esta sección será actualizada por auth.js -->
                 </div>
+                <div class="form-group">
+                    <label for="registerPassword">Contraseña</label>
+                    <input type="password" id="registerPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar Contraseña</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn">Registrarse</button>
+                <div id="registerError" class="error-message"></div>
+            </form>
+            <div class="modal-link">
+                <p>¿Ya tienes cuenta? <a onclick="showLoginModal()">Inicia sesión aquí</a></p>
             </div>
-        </nav>
+        </div>
+    </div>
 
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="foros.html">Tus Foros</a>
+                <a href="tendencias.html">Nuevas Tendencias</a>
+                <a href="normas.html">Normas de Comunidad</a>
+            </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="#" onclick="showLoginModal()" class="btn-login">Iniciar sesión</a>
+                <a href="#" onclick="showRegisterModal()" class="btn-register">Registrarse</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span class="username" id="usernameDisplay"></span></span>
+                <a href="#" onclick="logout()" class="btn-logout">Cerrar sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="background">
+        <div class="blur-1"></div>
+        <div class="blur-2"></div>
+    </div>
+
+    <main>
         <div class="hero">
             <h1>Descubre la noche en Barcelona</h1>
             <p>Tu guía definitiva para encontrar los mejores lugares y eventos</p>
@@ -499,24 +501,26 @@
                 <div id="searchResults" class="search-results"></div>
             </div>
         </div>
-    </header>
 
-    <main>
         <div class="featured-grid">
             <div class="featured-card">
                 <h3>Foros Populares</h3>
-                <p>Descubre y participa en las conversaciones más populares sobre la vida nocturna en Barcelona</p>
-                <button class="btn explore-forums-btn">Explorar Foros</button>
+                <p>Únete a las discusiones más activas sobre la vida nocturna en Barcelona</p>
+                <a href="#" class="btn">Explorar Foros</a>
             </div>
             <div class="featured-card">
-                <h3>Eventos Destacados</h3>
-                <p>Descubre los eventos más esperados de la semana</p>
-                <a href="#" class="btn">Ver Eventos</a>
+                <div>
+                    <h2>Eventos Destacados</h2>
+                    <p>Descubre los eventos más esperados de la semana</p>
+                </div>
+                <a href="eventos.html" class="btn">Ver Eventos</a>
             </div>
             <div class="featured-card">
-                <h3>Locales Recomendados</h3>
-                <p>Encuentra los mejores bares y discotecas según nuestros usuarios</p>
-                <a href="#" class="btn">Descubrir Locales</a>
+                <div>
+                    <h2>Recomendaciones</h2>
+                    <p>Las mejores recomendaciones de la comunidad</p>
+                </div>
+                <a href="recomendaciones.html" class="btn">Ver Recomendaciones</a>
             </div>
         </div>
 
@@ -619,162 +623,7 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/auth.js"></script>
     <script src="script.js"></script>
-    <script src="js/forum.js"></script>
-    <script src="js/search.js"></script>
-
-    <!-- Script de prueba -->
-    <script>
-        // Verificar que todo está cargado correctamente
-        window.addEventListener('load', function() {
-            const searchInput = document.getElementById('searchInput');
-            const searchButton = document.getElementById('searchButton');
-            const searchResults = document.getElementById('searchResults');
-
-            // Verificar elementos
-            console.log('Elementos de búsqueda:', {
-                input: searchInput ? 'encontrado' : 'no encontrado',
-                button: searchButton ? 'encontrado' : 'no encontrado',
-                results: searchResults ? 'encontrado' : 'no encontrado'
-            });
-
-            // Probar funcionalidad
-            if (searchButton) {
-                searchButton.addEventListener('click', function() {
-                    console.log('Click en botón de búsqueda detectado');
-                });
-            }
-        });
-    </script>
-
-    <script>
-        async function saveForum(forumId, button) {
-            try {
-                // Verificar si el usuario está logueado
-                const user = JSON.parse(localStorage.getItem('user'));
-                if (!user) {
-                    alert('Debes iniciar sesión para guardar foros');
-                    window.location.href = '/login.html';
-                    return;
-                }
-
-                // Deshabilitar el botón mientras se procesa
-                button.disabled = true;
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-                
-                const response = await fetch(`/api/forums/${forumId}/save`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        userId: user.id || 1 // Si no hay ID, usamos 1 para el admin
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Actualizar el botón para mostrar que está guardado
-                    button.innerHTML = '<i class="fas fa-check"></i> Guardado';
-                    button.style.backgroundColor = '#4CAF50';
-                    button.style.color = 'white';
-                    button.classList.add('saved');
-                } else {
-                    throw new Error(data.message || 'Error al guardar el foro');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message || 'Error al guardar el foro');
-                // Restaurar el botón a su estado original
-                button.innerHTML = '<i class="fas fa-star"></i> Guardar';
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        // Función para ver un foro
-        function viewForum(forumId) {
-            window.location.href = `/forum.html?id=${forumId}`;
-        }
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const searchButton = document.getElementById('searchButton');
-            const searchResults = document.getElementById('searchResults');
-            let searchTimeout;
-
-            async function performSearch() {
-                const query = searchInput.value.trim();
-                
-                if (!query) {
-                    searchResults.classList.remove('active');
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`/api/search/venues?query=${encodeURIComponent(query)}`);
-                    const data = await response.json();
-
-                    if (data.success && data.venues && data.venues.length > 0) {
-                        searchResults.innerHTML = data.venues.map(venue => `
-                            <div class="search-result-item" onclick="viewVenue(${venue.id})">
-                                <h3>${venue.name}</h3>
-                                <p>${venue.description || ''}</p>
-                                <div class="location">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    ${venue.location || ''}
-                                </div>
-                            </div>
-                        `).join('');
-                        searchResults.classList.add('active');
-                    } else {
-                        searchResults.innerHTML = `
-                            <div class="no-results">
-                                No se encontraron resultados para "${query}"
-                            </div>
-                        `;
-                        searchResults.classList.add('active');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-            }
-
-            // Event listeners
-            searchButton.addEventListener('click', performSearch);
-
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(performSearch, 300);
-            });
-
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    performSearch();
-                }
-            });
-
-            // Cerrar resultados al hacer clic fuera
-            document.addEventListener('click', function(e) {
-                if (!searchResults.contains(e.target) && 
-                    e.target !== searchInput && 
-                    e.target !== searchButton) {
-                    searchResults.classList.remove('active');
-                }
-            });
-        });
-    </script>
-
-    <script>
-        function viewVenue(id) {
-            window.location.href = `/venue.html?id=${id}`;
-        }
-    </script>
 </body>
 </html>
