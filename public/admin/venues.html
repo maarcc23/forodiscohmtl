@@ -199,19 +199,21 @@
 
     <script>
         // Verificar si el usuario es admin al cargar la página
-        window.addEventListener('load', async () => {
+        window.addEventListener('load', () => {
             try {
-                const response = await fetch('/api/check-auth', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                if (!data.authenticated || data.role !== 'admin') {
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                
+                // Verificar si está autenticado y es admin
+                if (!currentUser || !currentUser.authenticated || currentUser.role !== 'admin') {
                     window.location.href = '/login.html';
                     return;
                 }
 
-                document.getElementById('adminUsername').textContent = data.username;
+                // Mostrar el nombre de usuario
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                
+                // Cargar las venues
                 loadVenues();
             } catch (error) {
                 console.error('Error de autenticación:', error);
@@ -222,50 +224,68 @@
         async function loadVenues() {
             try {
                 console.log('Intentando cargar venues...');
-                const response = await fetch('/api/venues', {
-                    method: 'GET',
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                // Intentar cargar desde localStorage primero
+                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
                 
-                const data = await response.json();
-                console.log('Respuesta de venues:', data);
-
                 const venuesList = document.getElementById('venuesList');
                 venuesList.innerHTML = '';
 
-                if (data.venues && Array.isArray(data.venues)) {
-                    if (data.venues.length === 0) {
-                        venuesList.innerHTML = '<p>No hay venues registradas.</p>';
-                        return;
+                if (venues.length === 0) {
+                    // Si no hay venues en localStorage, intentar cargar desde la API
+                    try {
+                        const response = await fetch('/api/venues', {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Respuesta de venues desde API:', data);
+                            
+                            if (data.venues && Array.isArray(data.venues) && data.venues.length > 0) {
+                                // Guardar en localStorage
+                                localStorage.setItem('venues', JSON.stringify(data.venues));
+                                renderVenues(data.venues);
+                                return;
+                            }
+                        }
+                    } catch (apiError) {
+                        console.error('Error al cargar venues desde API:', apiError);
                     }
-
-                    data.venues.forEach(venue => {
-                        const venueCard = document.createElement('div');
-                        venueCard.className = 'venue-card';
-                        venueCard.innerHTML = `
-                            <h3>${venue.name}</h3>
-                            <div class="venue-info"><strong>Ubicación:</strong> ${venue.location}</div>
-                            <div class="venue-info"><strong>Contacto:</strong> ${venue.contact_info}</div>
-                            <div class="venue-info"><strong>Seguidores:</strong> ${venue.follower_count}</div>
-                            <div class="venue-info"><strong>Rating:</strong> ${venue.rating}/5</div>
-                            <p>${venue.description}</p>
-                        `;
-                        venuesList.appendChild(venueCard);
-                    });
-                } else {
-                    venuesList.innerHTML = '<p>Error al cargar las venues.</p>';
+                    
+                    venuesList.innerHTML = '<p>No hay venues registradas.</p>';
+                    return;
                 }
+                
+                // Renderizar venues desde localStorage
+                renderVenues(venues);
             } catch (error) {
                 console.error('Error al cargar venues:', error);
                 document.getElementById('venuesList').innerHTML = '<p>Error al cargar las venues: ' + error.message + '</p>';
             }
+        }
+        
+        function renderVenues(venues) {
+            const venuesList = document.getElementById('venuesList');
+            venuesList.innerHTML = '';
+            
+            venues.forEach(venue => {
+                const venueCard = document.createElement('div');
+                venueCard.className = 'venue-card';
+                venueCard.innerHTML = `
+                    <h3>${venue.name}</h3>
+                    <div class="venue-info"><strong>Ubicación:</strong> ${venue.location || 'No especificada'}</div>
+                    <div class="venue-info"><strong>Contacto:</strong> ${venue.contact_info || 'No especificado'}</div>
+                    <div class="venue-info"><strong>Seguidores:</strong> ${venue.follower_count || 0}</div>
+                    <div class="venue-info"><strong>Rating:</strong> ${venue.rating || 0}/5</div>
+                    <p>${venue.description || 'Sin descripción'}</p>
+                `;
+                venuesList.appendChild(venueCard);
+            });
         }
 
         document.getElementById('venueForm').addEventListener('submit', async (e) => {
@@ -275,7 +295,10 @@
                 name: document.getElementById('name').value,
                 location: document.getElementById('location').value,
                 contact_info: document.getElementById('contact_info').value,
-                description: document.getElementById('description').value
+                description: document.getElementById('description').value,
+                id: Date.now().toString(),
+                follower_count: 0,
+                rating: 0
             };
 
             console.log('Enviando datos:', formData);
@@ -284,51 +307,66 @@
             const successMessage = document.getElementById('successMessage');
             
             try {
-                const response = await fetch('/api/venues', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify(formData)
-                });
+                // Intentar guardar en la API primero
+                let apiSuccess = false;
+                
+                try {
+                    const response = await fetch('/api/venues', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(formData)
+                    });
 
-                const data = await response.json();
-                console.log('Respuesta del servidor:', data);
+                    const data = await response.json();
+                    console.log('Respuesta del servidor:', data);
 
-                if (response.ok) {
-                    successMessage.textContent = 'Venue registrada correctamente';
-                    successMessage.style.display = 'block';
-                    errorMessage.style.display = 'none';
-                    document.getElementById('venueForm').reset();
-                    await loadVenues(); // Recargar la lista de venues
-                } else {
-                    errorMessage.textContent = data.message || 'Error al registrar la venue';
-                    errorMessage.style.display = 'block';
-                    successMessage.style.display = 'none';
+                    if (response.ok) {
+                        apiSuccess = true;
+                    }
+                } catch (apiError) {
+                    console.error('Error al guardar en API:', apiError);
                 }
+                
+                // Si la API falló o no está disponible, guardar en localStorage
+                if (!apiSuccess) {
+                    // Obtener venues existentes
+                    const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                    
+                    // Añadir la nueva venue
+                    venues.push(formData);
+                    
+                    // Guardar en localStorage
+                    localStorage.setItem('venues', JSON.stringify(venues));
+                }
+
+                // Mostrar mensaje de éxito
+                errorMessage.style.display = 'none';
+                successMessage.textContent = 'Venue registrada correctamente';
+                successMessage.style.display = 'block';
+                
+                // Limpiar formulario
+                document.getElementById('venueForm').reset();
+                
+                // Recargar la lista de venues
+                loadVenues();
             } catch (error) {
-                console.error('Error al enviar datos:', error);
-                errorMessage.textContent = 'Error al conectar con el servidor: ' + error.message;
-                errorMessage.style.display = 'block';
+                console.error('Error al registrar venue:', error);
                 successMessage.style.display = 'none';
+                errorMessage.textContent = 'Error al registrar venue: ' + error.message;
+                errorMessage.style.display = 'block';
             }
         });
 
-        async function logout() {
-            try {
-                const response = await fetch('/api/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    window.location.href = '/login.html';
-                }
-            } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-            }
+        function logout() {
+            // Eliminar información de sesión
+            localStorage.removeItem('currentUser');
+            
+            // Redirigir a la página de inicio
+            window.location.href = '/index.html';
         }
     </script>
 </body>

@@ -199,111 +199,120 @@
         // Verificar si el usuario es admin al cargar la página
         window.addEventListener('load', checkAdminStatus);
 
-        async function checkAdminStatus() {
+        function checkAdminStatus() {
             try {
-                const response = await fetch('/api/check-auth', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
-                if (!data.authenticated || data.role !== 'admin') {
-                    window.location.href = '/index.html';
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                
+                // Verificar si está autenticado y es admin
+                if (!currentUser || !currentUser.authenticated || currentUser.role !== 'admin') {
+                    window.location.href = '/login.html';
                     return;
                 }
 
-                document.getElementById('adminUsername').textContent = data.username;
+                // Mostrar el nombre de usuario
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                
+                // Cargar las discotecas
                 loadClubs();
             } catch (error) {
-                console.error('Error:', error);
-                window.location.href = '/index.html';
+                console.error('Error de autenticación:', error);
+                window.location.href = '/login.html';
             }
         }
 
-        async function loadClubs() {
+        function loadClubs() {
             try {
-                const response = await fetch('/api/clubs', {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-
+                // Obtener discotecas desde localStorage
+                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                
                 const clubsList = document.getElementById('clubsList');
                 clubsList.innerHTML = '';
+                
+                if (clubs.length === 0) {
+                    clubsList.innerHTML = '<p>No hay discotecas registradas.</p>';
+                    return;
+                }
 
-                data.clubs.forEach(club => {
+                clubs.forEach(club => {
                     const clubCard = document.createElement('div');
                     clubCard.className = 'club-card';
                     clubCard.innerHTML = `
                         <h3>${club.nombre}</h3>
-                        <p><strong>Dirección:</strong> ${club.direccion}</p>
-                        <p><strong>Teléfono:</strong> ${club.telefono}</p>
-                        <p><strong>Horario:</strong> ${club.horario}</p>
-                        <p>${club.descripcion}</p>
+                        <p><strong>Dirección:</strong> ${club.direccion || 'No especificada'}</p>
+                        <p><strong>Teléfono:</strong> ${club.telefono || 'No especificado'}</p>
+                        <p><strong>Horario:</strong> ${club.horario || 'No especificado'}</p>
+                        <p>${club.descripcion || 'Sin descripción'}</p>
                     `;
                     clubsList.appendChild(clubCard);
                 });
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error al cargar discotecas:', error);
+                document.getElementById('clubsList').innerHTML = '<p>Error al cargar las discotecas: ' + error.message + '</p>';
             }
         }
 
-        document.getElementById('clubForm').addEventListener('submit', async (e) => {
+        document.getElementById('clubForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
             const formData = {
+                id: Date.now().toString(),
                 nombre: document.getElementById('nombre').value,
                 direccion: document.getElementById('direccion').value,
                 telefono: document.getElementById('telefono').value,
                 horario: document.getElementById('horario').value,
-                descripcion: document.getElementById('descripcion').value
+                descripcion: document.getElementById('descripcion').value,
+                // Añadir estos campos para compatibilidad con venues
+                name: document.getElementById('nombre').value,
+                location: document.getElementById('direccion').value,
+                contact_info: document.getElementById('telefono').value,
+                description: document.getElementById('descripcion').value,
+                follower_count: 0,
+                rating: 0
             };
 
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
             
             try {
-                const response = await fetch('/api/clubs', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData),
-                    credentials: 'include'
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    successMessage.textContent = 'Discoteca registrada correctamente';
-                    successMessage.style.display = 'block';
-                    errorMessage.style.display = 'none';
-                    document.getElementById('clubForm').reset();
-                    loadClubs();
-                } else {
-                    errorMessage.textContent = data.message || 'Error al registrar la discoteca';
-                    errorMessage.style.display = 'block';
-                    successMessage.style.display = 'none';
-                }
+                // Obtener discotecas existentes
+                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                
+                // Añadir la nueva discoteca
+                clubs.push(formData);
+                
+                // Guardar en localStorage
+                localStorage.setItem('clubs', JSON.stringify(clubs));
+                
+                // También guardar en venues para que aparezca en el index
+                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                venues.push(formData);
+                localStorage.setItem('venues', JSON.stringify(venues));
+                
+                // Mostrar mensaje de éxito
+                successMessage.textContent = 'Discoteca registrada correctamente';
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // Limpiar formulario
+                document.getElementById('clubForm').reset();
+                
+                // Recargar la lista de discotecas
+                loadClubs();
             } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = 'Error al conectar con el servidor';
+                console.error('Error al registrar discoteca:', error);
+                errorMessage.textContent = 'Error al registrar la discoteca: ' + error.message;
                 errorMessage.style.display = 'block';
                 successMessage.style.display = 'none';
             }
         });
 
-        async function logout() {
-            try {
-                const response = await fetch('/api/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    window.location.href = '/index.html';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+        function logout() {
+            // Eliminar información de sesión
+            localStorage.removeItem('currentUser');
+            
+            // Redirigir a la página de inicio
+            window.location.href = '/index.html';
         }
     </script>
 </body>

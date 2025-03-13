@@ -176,7 +176,7 @@
             align-items: center;
         }
 
-        .btn {
+        .btn-login, .btn-register, .btn-logout {
             padding: 0.5rem 1rem;
             border-radius: 20px;
             text-decoration: none;
@@ -184,24 +184,36 @@
             font-size: 0.9rem;
         }
 
-        .btn-ghost {
+        .btn-login {
+            background-color: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-login:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-register, .btn-logout {
             color: white;
             border: 1px solid white;
             background: transparent;
         }
 
-        .btn-ghost:hover {
+        .btn-register:hover, .btn-logout:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .btn-primary {
-            background: white;
-            color: black;
-            border: 1px solid white;
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .btn-primary:hover {
-            background: #e0e0e0;
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -214,9 +226,13 @@
                 <a href="tendencias.html">Nuevas Tendencias</a>
                 <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="auth-buttons">
-                <a href="login.html" class="btn btn-ghost">Iniciar sesión</a>
-                <a href="register.html" class="btn btn-primary">Registrarse</a>
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" class="btn-register">Registrarse</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span class="username" id="usernameDisplay"></span></span>
+                <a href="#" class="btn-logout">Cerrar sesión</a>
             </div>
         </div>
     </nav>

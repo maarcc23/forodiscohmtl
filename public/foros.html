@@ -24,32 +24,88 @@
         }
 
         /* Navbar styles */
-        nav {
-            background-color: #000000;
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            border-bottom: 1px solid var(--border-color);
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .nav-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
+        .nav-center {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
         }
 
         .nav-links a {
-            color: #ffffff;
+            color: white;
             text-decoration: none;
             transition: color 0.3s ease;
+            font-size: 1.1rem;
         }
 
         .nav-links a:hover {
-            color: var(--primary-color);
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-login, .btn-register, .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-login {
+            background-color: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-login:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-register, .btn-logout {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-register:hover, .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
         }
 
         /* Container and title styles */
@@ -169,36 +225,6 @@
             color: var(--text-secondary);
         }
 
-        /* Auth buttons */
-        .auth-buttons a {
-            text-decoration: none;
-            padding: 0.5rem 1.5rem;
-            border-radius: 2rem;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .auth-buttons .login-btn {
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            background: transparent;
-        }
-
-        .auth-buttons .login-btn:hover {
-            background: rgba(255, 75, 110, 0.1);
-        }
-
-        .auth-buttons .register-btn {
-            color: white;
-            background: var(--primary-color);
-            border: none;
-        }
-
-        .auth-buttons .register-btn:hover {
-            background: #ff3d63;
-        }
-
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -211,127 +237,286 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-content">
-            <div class="nav-left">
-                <a href="index.html" class="logo">ForoDisco</a>
-                <div class="nav-links">
-                    <a href="foros.html">Tus Foros</a>
-                    <a href="tendencias.html">Nuevas Tendencias</a>
-                    <a href="normas.html">Normas de Comunidad</a>
-                </div>
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="foros.html">Tus Foros</a>
+                <a href="tendencias.html">Nuevas Tendencias</a>
+                <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="auth-buttons">
-                <div id="userSection" style="display: none;">
-                    <span id="username" style="color: white; margin-right: 1rem;"></span>
-                    <button onclick="logout()" class="login-btn" style="cursor: pointer;">
-                        Cerrar Sesión
-                    </button>
-                </div>
-                <div id="authButtons" style="display: none;">
-                    <a href="login.html" class="login-btn">Iniciar Sesión</a>
-                    <a href="register.html" class="register-btn">Registrarse</a>
-                </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" onclick="showModal('loginModal')" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" onclick="showModal('registerModal')" class="btn-register">Registrarse</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span class="username" id="usernameDisplay"></span></span>
+                <a href="index.html" onclick="logout()" class="btn-logout">Cerrar sesión</a>
             </div>
         </div>
     </nav>
-
     <div class="container">
         <h1>Tus Foros Guardados</h1>
-        <div id="savedForumsList" class="forum-grid">
+        <div id="forumsContainer" class="forum-grid">
             <!-- Los foros se cargarán aquí dinámicamente -->
         </div>
     </div>
 
     <script src="js/auth.js"></script>
     <script>
-        async function loadSavedForums() {
-            try {
-                const user = JSON.parse(localStorage.getItem('user'));
-                if (!user) {
-                    window.location.href = '/login.html';
-                    return;
-                }
+       async function loadSavedForums() {
+           const forumsContainer = document.getElementById('forumsContainer');
+           forumsContainer.innerHTML = '<p class="loading">Cargando tus foros guardados...</p>';
+       
+           try {
+               // Verificar autenticación desde localStorage
+               const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+               if (!currentUser || !currentUser.authenticated) {
+                   window.location.href = '/login.html?redirect=foros.html';
+                   return;
+               }
+       
+               // Obtener foros guardados desde localStorage
+               const savedForumIds = JSON.parse(localStorage.getItem('savedForums') || '[]');
+               console.log('IDs de foros guardados:', savedForumIds);
+               
+               // Obtener locales guardados desde el buscador
+               const savedVenues = JSON.parse(localStorage.getItem('savedVenues') || '[]');
+               console.log('Locales guardados desde el buscador:', savedVenues);
+               
+               // Obtener todas las venues y clubs desde localStorage
+               const allVenuesFromStorage = JSON.parse(localStorage.getItem('venues') || '[]');
+               const allClubsFromStorage = JSON.parse(localStorage.getItem('clubs') || '[]');
+               
+               console.log('Venues desde localStorage:', allVenuesFromStorage);
+               console.log('Clubs desde localStorage:', allClubsFromStorage);
+               
+               // Combinar todas las venues y clubs
+               let allVenuesAndClubs = [...allVenuesFromStorage];
+               
+               // Añadir clubs que no estén ya en venues
+               allClubsFromStorage.forEach(club => {
+                   // Verificar si el club ya existe en venues
+                   const exists = allVenuesAndClubs.some(v => 
+                       v.id === club.id || 
+                       (v.name && club.nombre && v.name.toLowerCase() === club.nombre.toLowerCase())
+                   );
+                   
+                   if (!exists) {
+                       // Convertir formato de club a venue
+                       allVenuesAndClubs.push({
+                           id: club.id || Date.now().toString(),
+                           name: club.nombre || club.name,
+                           description: club.descripcion || club.description,
+                           location: club.direccion || club.location,
+                           contact_info: club.telefono || club.contact_info,
+                           members: 0,
+                           follower_count: club.follower_count || 0,
+                           rating: club.rating || 0
+                       });
+                   }
+               });
+               
+               if ((!savedForumIds || savedForumIds.length === 0) && 
+                   (!savedVenues || savedVenues.length === 0) && 
+                   (!allVenuesAndClubs || allVenuesAndClubs.length === 0)) {
+                   forumsContainer.innerHTML = `
+                       <div class="no-forums">
+                           <h2>Aún no tienes foros guardados</h2>
+                           <p>Explora y guarda foros para acceder a ellos rápidamente desde aquí.</p>
+                           <a href="index.html" class="btn-primary">Explorar foros</a>
+                       </div>
+                   `;
+                   return;
+               }
+               
+               // Intentar obtener datos de la API como fallback
+               let savedForums = [];
+               try {
+                   const response = await fetch('/api/venues');
+                   const data = await response.json();
+                   console.log('Datos de venues recibidos desde API:', data);
+                   
+                   if (data.venues && data.venues.length > 0) {
+                       // Filtrar solo los foros guardados
+                       savedForums = data.venues.filter(venue => 
+                           savedForumIds.includes(parseInt(venue.id)) || savedForumIds.includes(venue.id)
+                       );
+                       console.log('Foros guardados filtrados desde API:', savedForums);
+                   }
+               } catch (apiError) {
+                   console.error('Error al cargar foros desde API:', apiError);
+               }
+               
+               // Mostrar tanto los foros guardados como los locales guardados desde el buscador
+               // y las venues/clubs desde localStorage
+               displaySavedVenues(savedVenues, savedForums, allVenuesAndClubs);
+           } catch (error) {
+               console.error('Error al cargar foros:', error);
+               forumsContainer.innerHTML = `<p class="error-message">Error al conectar con el servidor. Mostrando datos guardados localmente.</p>`;
+               
+               // Intentar mostrar al menos los datos guardados en localStorage
+               try {
+                   const savedVenues = JSON.parse(localStorage.getItem('savedVenues') || '[]');
+                   const allVenuesFromStorage = JSON.parse(localStorage.getItem('venues') || '[]');
+                   const allClubsFromStorage = JSON.parse(localStorage.getItem('clubs') || '[]');
+                   
+                   // Combinar todas las venues y clubs
+                   let allVenuesAndClubs = [...allVenuesFromStorage];
+                   
+                   // Añadir clubs que no estén ya en venues
+                   allClubsFromStorage.forEach(club => {
+                       if (!allVenuesAndClubs.some(v => v.id === club.id)) {
+                           allVenuesAndClubs.push({
+                               id: club.id,
+                               name: club.nombre || club.name,
+                               description: club.descripcion || club.description,
+                               location: club.direccion || club.location,
+                               contact_info: club.telefono || club.contact_info
+                           });
+                       }
+                   });
+                   
+                   displaySavedVenues(savedVenues, [], allVenuesAndClubs);
+               } catch (e) {
+                   console.error('Error al cargar datos desde localStorage:', e);
+                   forumsContainer.innerHTML = `<p class="error-message">No se pudieron cargar los datos guardados.</p>`;
+               }
+           }
+       }
 
-                const response = await fetch(`/api/users/${user.id}/saved-forums`);
-                const data = await response.json();
-                
-                const forumsList = document.getElementById('savedForumsList');
-                
-                if (!data.forums || data.forums.length === 0) {
-                    forumsList.innerHTML = `
-                        <div class="no-forums">
-                            <h3>No tienes foros guardados</h3>
-                            <p>Explora los foros disponibles y guarda tus favoritos</p>
-                        </div>
-                    `;
-                    return;
-                }
+       // Función para mostrar los foros y locales guardados
+       function displaySavedVenues(savedVenues, savedForums, allVenuesAndClubs = []) {
+           const forumsContainer = document.getElementById('forumsContainer');
+           
+           // Combinar los foros guardados con los locales guardados
+           let allVenues = [];
+           
+           // Añadir los foros guardados desde la API
+           if (savedForums && savedForums.length > 0) {
+               allVenues = [...savedForums];
+           }
+           
+           // Añadir los locales guardados desde el buscador
+           if (savedVenues && savedVenues.length > 0) {
+               // Filtrar para evitar duplicados
+               savedVenues.forEach(venue => {
+                   // Verificar si el venue es un objeto o solo un ID
+                   if (typeof venue === 'object' && venue.id) {
+                       // Verificar que no exista ya en allVenues
+                       if (!allVenues.some(v => v.id === venue.id)) {
+                           allVenues.push(venue);
+                       }
+                   }
+               });
+           }
+           
+           // Añadir todas las venues y clubs desde localStorage
+           if (allVenuesAndClubs && allVenuesAndClubs.length > 0) {
+               allVenuesAndClubs.forEach(venue => {
+                   if (!allVenues.some(v => v.id === venue.id)) {
+                       allVenues.push(venue);
+                   }
+               });
+           }
+           
+           if (allVenues.length === 0) {
+               forumsContainer.innerHTML = `
+                   <div class="no-forums">
+                       <h2>No se encontraron los foros guardados</h2>
+                       <p>Es posible que los foros que guardaste ya no existan.</p>
+                       <a href="index.html" class="btn-primary">Explorar foros</a>
+                   </div>
+               `;
+               return;
+           }
+           
+           // Mostrar todos los venues guardados
+           const forumsHTML = allVenues.map(forum => `
+               <div class="forum-card" data-id="${forum.id}">
+                   <h3>${forum.name}</h3>
+                   <p class="forum-description">${forum.description || 'Sin descripción'}</p>
+                   <div class="forum-meta">
+                       <span class="venue-location">${forum.location || forum.address || 'Ubicación desconocida'}</span>
+                   </div>
+                   <div class="forum-actions">
+                       <button class="btn-view" onclick="viewForum(${forum.id})">Ver Foro</button>
+                       <button class="btn-remove" onclick="removeForum(${forum.id}, this, '${typeof forum === 'object' ? 'venue' : 'forum'}')">Eliminar</button>
+                   </div>
+               </div>
+           `).join('');
+           
+           forumsContainer.innerHTML = forumsHTML;
+       }
 
-                forumsList.innerHTML = data.forums.map(forum => `
-                    <div class="forum-card">
-                        <h2 class="forum-title">${forum.name}</h2>
-                        <p class="forum-description">${forum.description}</p>
-                        <p class="forum-location">
-                            <i class="fas fa-map-marker-alt"></i>
-                            ${forum.location || 'Ubicación no disponible'}
-                        </p>
-                        <div class="forum-actions">
-                            <button onclick="removeForum(${forum.id}, this)" class="btn btn-remove">
-                                <i class="fas fa-trash"></i>
-                                Eliminar
-                            </button>
-                            <button onclick="viewForum(${forum.id})" class="btn btn-view">
-                                <i class="fas fa-eye"></i>
-                                Ver Foro
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error al cargar los foros:', error);
-            }
-        }
+       function removeForum(forumId, button, type = 'forum') {
+           if (!confirm('¿Estás seguro de que deseas eliminar este foro de tus guardados?')) {
+               return;
+           }
+           
+           try {
+               // Mostrar indicador de carga
+               button.disabled = true;
+               button.textContent = 'Eliminando...';
+               
+               if (type === 'venue') {
+                   // Eliminar de savedVenues
+                   let savedVenues = JSON.parse(localStorage.getItem('savedVenues') || '[]');
+                   savedVenues = savedVenues.filter(v => {
+                       if (typeof v === 'object') {
+                           return v.id !== parseInt(forumId);
+                       } else {
+                           return v !== parseInt(forumId);
+                       }
+                   });
+                   localStorage.setItem('savedVenues', JSON.stringify(savedVenues));
+               } else {
+                   // Eliminar de savedForums
+                   let savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                   savedForums = savedForums.filter(id => id !== parseInt(forumId));
+                   localStorage.setItem('savedForums', JSON.stringify(savedForums));
+               }
+               
+               // Eliminar la tarjeta del foro con una animación
+               const forumCard = button.closest('.forum-card');
+               forumCard.style.opacity = '0';
+               
+               setTimeout(() => {
+                   forumCard.remove();
+                   
+                   // Si no quedan foros, mostrar mensaje
+                   if (document.querySelectorAll('.forum-card').length === 0) {
+                       document.getElementById('forumsContainer').innerHTML = `
+                           <div class="no-forums">
+                               <h2>Aún no tienes foros guardados</h2>
+                               <p>Explora y guarda foros para acceder a ellos rápidamente desde aquí.</p>
+                               <a href="index.html" class="btn-primary">Explorar foros</a>
+                           </div>
+                       `;
+                   }
+               }, 300);
+               
+           } catch (error) {
+               console.error('Error al eliminar foro:', error);
+               alert('Error al eliminar el foro. Por favor, intenta de nuevo más tarde.');
+               button.disabled = false;
+               button.textContent = 'Eliminar';
+           }
+       }
 
-        async function removeForum(forumId, button) {
-            try {
-                const user = JSON.parse(localStorage.getItem('user'));
-                if (!user) return;
+       function viewForum(forumId) {
+           window.location.href = `index.html?forum=${forumId}`;
+       }
 
-                const response = await fetch(`/api/forums/${forumId}/save`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ userId: user.id })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Eliminar la tarjeta del foro
-                    const forumCard = button.closest('.forum-card');
-                    forumCard.remove();
-
-                    // Si no quedan foros, mostrar mensaje
-                    if (document.querySelectorAll('.forum-card').length === 0) {
-                        document.getElementById('savedForumsList').innerHTML = `
-                            <div class="no-forums">
-                                <h3>No tienes foros guardados</h3>
-                                <p>Explora los foros disponibles y guarda tus favoritos</p>
-                            </div>
-                        `;
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al eliminar el foro');
-            }
-        }
-
-        function viewForum(forumId) {
-            window.location.href = `/forum.html?id=${forumId}`;
-        }
+       function logout() {
+           // Eliminar datos de autenticación desde localStorage
+           localStorage.removeItem('currentUser');
+           localStorage.removeItem('savedForums');
+           localStorage.removeItem('savedVenues');
+           
+           // Redireccionar a la página de login
+           window.location.href = '/login.html';
+       }
 
         // Cargar los foros guardados cuando se carga la página
         document.addEventListener('DOMContentLoaded', loadSavedForums);

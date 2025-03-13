@@ -1,159 +1,380 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ForoDisco</title>
     <title>Iniciar Sesión - ForoDisco</title>
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Variables de colores */
+        :root {
+            --primary-color: #ff4b6e;
+            --primary-light: #ff6b8b;
+            --primary-dark: #e63e5c;
+            --secondary-color: #3a86ff;
+            --secondary-light: #5b9fff;
+            --dark-bg: #121212;
+            --darker-bg: #0a0a0a;
+            --card-bg: #1e1e1e;
+            --input-bg: #2a2a2a;
+            --light-text: #ffffff;
+            --gray-text: #b0b0b0;
+            --border-color: #333;
+            --success: #4caf50;
+            --error: #f44336;
+        }
+        
+        /* Estilos generales */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-        /* Estilos de la navegación */
-        .nav-top {
-            background-color: #1a1a1a;
-            padding: 1rem;
-            margin-bottom: 2rem;
-        }
-        .nav-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .nav-top a {
-            color: white;
-            text-decoration: none;
-            margin-right: 1rem;
-        }
-        .nav-top a:hover {
-            color: #ff4b6e;
-        }
-        /* Resto de estilos */
-        body {
-            background-color: #f5f5f5;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 75, 110, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(58, 134, 255, 0.1) 0%, transparent 20%);
+            color: var(--light-text);
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        .main-container {
+        
+        /* Estilos de la navegación */
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            min-height: calc(100vh - 80px);
-            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a:hover {
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-login, .btn-register {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-login {
+            background-color: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-login:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-register {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-register:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Contenedor principal */
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        /* Contenedor de login */
         .login-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            padding: 2.5rem;
+            animation: fadeIn 0.6s ease;
+            position: relative;
+            overflow: hidden;
         }
-        h1 {
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-container h1 {
             text-align: center;
-            color: #1a73e8;
-            margin-bottom: 20px;
-            color: #333;
-            margin-bottom: 30px;
+            margin-bottom: 2rem;
+            color: var(--light-text);
+            font-size: 2rem;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 10px;
         }
+        
+        .login-container h1::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-color);
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Estilos del formulario */
         .form-group {
-            margin-bottom: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 1.8rem;
+            position: relative;
         }
-        label {
+        
+        .form-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #333;
-            margin-bottom: 5px;
-            color: #666;
+            margin-bottom: 0.6rem;
+            color: var(--gray-text);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
         }
-        input {
+        
+        .form-group input {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 1rem 1rem 1rem 2.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            color: var(--light-text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
             box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
         }
-        button {
+        
+        .form-group input:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+        }
+        
+        .form-group i {
+            position: absolute;
+            left: 1rem;
+            top: 2.7rem;
+            color: var(--gray-text);
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus + i {
+            color: var(--secondary-color);
+        }
+        
         .btn {
             width: 100%;
-            padding: 10px;
-            background-color: #1a73e8;
-            color: white;
-            padding: 10px;
-            background-color: #ff4b6e;
-            color: white;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: var(--light-text);
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(255, 75, 110, 0.3);
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
         }
-        button:hover {
-            background-color: #1557b0;
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+        
         .btn:hover {
-            background-color: #ff3459;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(255, 75, 110, 0.4);
         }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
         .error-message {
-            color: #dc3545;
-            text-align: center;
-            margin-top: 10px;
+            color: var(--error);
+            margin-top: 1.2rem;
+            font-size: 0.9rem;
             display: none;
+            padding: 0.8rem;
+            background-color: rgba(244, 67, 54, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid var(--error);
+            animation: shake 0.5s ease;
         }
-        .error-message {
-            color: #ff4b6e;
-            text-align: center;
-            margin-top: 10px;
-            display: none;
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
+        
+        /* Enlaces */
         .register-link {
             text-align: center;
-            margin-top: 20px;
-            color: #666;
+            margin-top: 2rem;
+            color: var(--gray-text);
+            position: relative;
+            padding-top: 1.5rem;
         }
+        
+        .register-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 25%;
+            width: 50%;
+            height: 1px;
+            background-color: var(--border-color);
+        }
+        
         .register-link a {
-            color: #ff4b6e;
+            color: var(--secondary-color);
             text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
         }
+        
         .register-link a:hover {
-            text-decoration: underline;
+            color: var(--secondary-light);
+        }
+        
+        .register-link a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 1px;
+            background-color: var(--secondary-light);
+            bottom: -2px;
+            left: 0;
+            transition: width 0.3s ease;
+        }
+        
+        .register-link a:hover::after {
+            width: 100%;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--darker-bg);
+            padding: 1.2rem;
+            text-align: center;
+            color: var(--gray-text);
+            font-size: 0.9rem;
+            margin-top: auto;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 2rem;
+                margin: 0 1rem;
+            }
+            
+            .nav-center {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .nav-links {
+                margin-top: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <h1>Iniciar Sesión</h1>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" required>
-    <nav class="nav-top">
-        <div class="nav-content">
-            <div>
-                <a href="index.html">ForoDisco</a>
+    <!-- Barra de navegación -->
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="index.html">Inicio</a>
                 <a href="foros.html">Tus Foros</a>
                 <a href="tendencias.html">Nuevas Tendencias</a>
-                <a href="normas.html">Normas de Comunidad</a>
+                <a href="search.html">Buscar</a>
             </div>
-            <div class="form-group">
-                <label for="password">Contraseña</label>
-                <input type="password" id="password" required>
-            </div>
-            <button type="submit">Iniciar Sesión</button>
-            <div id="errorMessage" class="error-message"></div>
-        </form>
-            <div>
-                <a href="login.html">Iniciar sesión</a>
-                <a href="register.html">Registrarse</a>
+            <div class="auth-buttons">
+                <a href="login.html" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" class="btn-register">Registrarse</a>
             </div>
         </div>
     </nav>
@@ -165,10 +386,12 @@
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" required>
+                    <i class="fas fa-envelope"></i>
                 </div>
                 <div class="form-group">
                     <label for="password">Contraseña</label>
                     <input type="password" id="password" name="password" required>
+                    <i class="fas fa-lock"></i>
                 </div>
                 <button type="submit" class="btn">Iniciar Sesión</button>
                 <div id="errorMessage" class="error-message"></div>
@@ -178,6 +401,10 @@
             </div>
         </div>
     </div>
+
+    <footer>
+        <p>&copy; 2024 ForoDisco. Todos los derechos reservados.</p>
+    </footer>
 
     <script>
         const loginForm = document.getElementById('loginForm');
@@ -190,31 +417,64 @@
             const password = document.getElementById('password').value;
             
             try {
+                // Primero intentamos iniciar sesión con localStorage
+                const adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                // Verificar si es el administrador (el admin puede iniciar sesión con username o email)
+                if (adminUser && (adminUser.username === email || adminUser.email === email) && adminUser.password === password) {
+                    // Guardar información de sesión
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: adminUser.id,
+                        username: adminUser.username,
+                        role: 'admin',
+                        authenticated: true
+                    }));
+                    
+                    // Redirigir al panel de administración
+                    window.location.href = 'admin/panel.html';
+                    return;
+                }
+                
+                // Verificar si es un usuario normal
+                const user = users.find(u => u.email === email && u.password === password);
+                if (user) {
+                    // Guardar información de sesión
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: user.id,
+                        username: user.username,
+                        role: user.role || 'user',
+                        authenticated: true
+                    }));
+                    
+                    // Redirigir a la página principal
+                    window.location.href = 'index.html';
+                    return;
+                }
+                
+                // Si no se encontró en localStorage, intentar con la API
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
                 });
 
                 const data = await response.json();
                 
-                if (data.success) {
-                    // Login exitoso
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/index.html';
-
                 if (response.ok) {
+                    // Redirigir a la página principal
                     window.location.href = 'index.html';
                 } else {
                     // Mostrar error
-                    errorMessage.textContent = data.message || 'Error al iniciar sesión';
+                    errorMessage.textContent = data.message || 'Credenciales incorrectas';
                     errorMessage.style.display = 'block';
                 }
             } catch (error) {
                 console.error('Error:', error);
-                errorMessage.textContent = 'Error de conexión';
+                errorMessage.textContent = 'Error de conexión o credenciales incorrectas';
                 errorMessage.style.display = 'block';
             }
         });

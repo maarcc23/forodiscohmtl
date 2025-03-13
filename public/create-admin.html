@@ -2,23 +2,154 @@
 <html>
 <head>
     <title>Crear Admin</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #ff4b6e;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b0b0;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #ff4b6e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #e63e5c;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #2a2a2a;
+            display: none;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .home-link {
+            margin-top: 20px;
+            color: #3a86ff;
+            text-decoration: none;
+        }
+        .home-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <button onclick="createAdmin()">Crear Usuario Admin</button>
-    <div id="result"></div>
+    <div class="container">
+        <h1>Crear Usuario Administrador</h1>
+        
+        <div class="form-group">
+            <label for="username">Nombre de usuario</label>
+            <input type="text" id="username" placeholder="admin" value="admin">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" placeholder="contraseña" value="admin123">
+        </div>
+        
+        <button onclick="createAdmin()">Crear Usuario Admin</button>
+        
+        <div id="result"></div>
+        
+        <a href="index.html" class="home-link">Volver a la página principal</a>
+    </div>
 
     <script>
-        async function createAdmin() {
+        function createAdmin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showResult('Por favor, completa todos los campos', 'error');
+                return;
+            }
+            
             try {
-                const response = await fetch('/api/create-admin', {
-                    method: 'POST'
-                });
-                const data = await response.json();
-                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+                // Crear objeto de usuario administrador
+                const adminUser = {
+                    id: Date.now().toString(),
+                    username: username,
+                    password: password,  // En una aplicación real, esto debería estar hasheado
+                    role: 'admin',
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Guardar en localStorage
+                localStorage.setItem('adminUser', JSON.stringify(adminUser));
+                
+                // También añadir a la lista de usuarios si existe
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const existingUserIndex = users.findIndex(u => u.username === username);
+                
+                if (existingUserIndex >= 0) {
+                    users[existingUserIndex] = { ...users[existingUserIndex], ...adminUser };
+                } else {
+                    users.push(adminUser);
+                }
+                
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                showResult(`Usuario administrador "${username}" creado correctamente. Ahora puedes iniciar sesión con estas credenciales.`, 'success');
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('result').textContent = 'Error al crear admin';
+                showResult('Error al crear usuario administrador: ' + error.message, 'error');
             }
+        }
+        
+        function showResult(message, type) {
+            const resultElement = document.getElementById('result');
+            resultElement.textContent = message;
+            resultElement.className = type;
+            resultElement.style.display = 'block';
         }
     </script>
 </body>

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ForoDisco - Tu guía de ocio nocturno en Barcelona</title>
+    <!-- Font Awesome para iconos -->
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Estilos existentes */
@@ -99,25 +102,27 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+            background-color: rgba(0, 0, 0, 0.8);
             z-index: 1000;
-            align-items: center;
-            justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
         }
 
         .modal {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            position: relative;
-            animation: modalAppear 0.3s ease-out;
+            background-color: #1e1e1e;
+            width: 90%;
+            max-width: 1000px;
+            margin: 50px auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s ease;
+            color: #fff;
         }
 
-        @keyframes modalAppear {
+        @keyframes modalFadeIn {
             from {
                 opacity: 0;
                 transform: translateY(-20px);
@@ -126,6 +131,38 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: #252525;
+            border-bottom: 1px solid #333;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            font-size: 1.8rem;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
         .modal h1 {
@@ -409,27 +446,398 @@
             display: flex;
             align-items: center;
         }
+
+        /* Estilos para las secciones principales */
+        .main-sections {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            gap: 20px;
+        }
+
+        .section-card {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 250px;
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-card h2 {
+            color: #ff4b6e;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .section-card p {
+            color: white;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            flex-grow: 1;
+        }
+
+        .section-card .btn {
+            background-color: #ff4b6e;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: auto;
+            align-self: center;
+            width: 80%;
+            max-width: 200px;
+        }
+
+        .section-card .btn:hover {
+            background-color: #e63e5c;
+        }
+
+        /* Media query para dispositivos móviles */
+        @media (max-width: 768px) {
+            .main-sections {
+                flex-direction: column;
+            }
+            
+            .section-card {
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        /* Estilos para el modal de foros */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal {
+            background-color: #1e1e1e;
+            width: 90%;
+            max-width: 1000px;
+            margin: 50px auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s ease;
+            color: #fff;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: #252525;
+            border-bottom: 1px solid #333;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            font-size: 1.8rem;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .forum-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            overflow-x: visible;
+        }
+
+        /* Eliminar los estilos de la barra de desplazamiento */
+        .forum-grid::-webkit-scrollbar {
+            display: none;
+        }
+
+        .forum-grid::-webkit-scrollbar-track {
+            display: none;
+        }
+
+        .forum-grid::-webkit-scrollbar-thumb {
+            display: none;
+        }
+
+        .forum-card {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 200px; /* Reducir el ancho para que quepan más tarjetas */
+            min-width: 200px;
+            max-width: 200px;
+            flex: 0 0 auto;
+        }
+
+        .forum-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .forum-card h3 {
+            color: white;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        .forum-card p {
+            color: #b0b0b0;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+
+        .forum-card .location {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .forum-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-top: auto;
+        }
+
+        .forum-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-save {
+            background-color: transparent;
+            color: #ff4b6e;
+            border: 1px solid #ff4b6e !important;
+        }
+
+        .btn-save:hover {
+            background-color: rgba(255, 75, 110, 0.1);
+        }
+
+        .btn-save.saved {
+            background-color: #ff4b6e;
+            color: white;
+        }
+
+        .btn-view {
+            background-color: #ff4b6e;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background-color: #e63e5c;
+        }
+
+        /* Estilos para el spinner de carga */
+        .loading-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: #b0b0b0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 75, 110, 0.3);
+            border-radius: 50%;
+            border-top-color: #ff4b6e;
+            margin: 0 auto 1rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-venues {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            color: #b0b0b0;
+        }
+
+        .no-venues i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #ff4b6e;
+        }
+
+        /* Estilos para la sección de discotecas populares */
+        .venues-section {
+            margin-top: 2rem;
+            padding: 0 1rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-header {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .section-header h2 {
+            color: #ff4b6e;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-header p {
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .section-actions {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-secondary {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background-color: transparent;
+            color: white;
+            border: 1px solid #ff4b6e;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 75, 110, 0.2);
+        }
     </style>
 </head>
 <body>
-    <!-- Modal de Inicio de Sesión -->
+    <!-- Modal de Login -->
     <div id="loginModal" class="modal-overlay">
         <div class="modal">
-            <h1>Iniciar Sesión</h1>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" name="email" required>
+            <div class="modal-header">
+                <h2>Iniciar Sesión</h2>
+                <span class="close-modal" onclick="closeModal('loginModal')">&times;</span>
+            </div>
+            <div class="modal-content">
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Contraseña</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+                    <div id="loginError" class="error-message"></div>
+                </form>
+                <div class="modal-link">
+                    <p>¿No tienes cuenta? <a href="#" onclick="showModal('registerModal'); closeModal('loginModal')">Regístrate aquí</a></p>
                 </div>
-                <div class="form-group">
-                    <label for="loginPassword">Contraseña</label>
-                    <input type="password" id="loginPassword" name="password" required>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div id="registerModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Registro</h2>
+                <span class="close-modal" onclick="closeModal('registerModal')">&times;</span>
+            </div>
+            <div class="modal-content">
+                <form id="registerForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="registerUsername">Nombre de usuario</label>
+                        <input type="text" id="registerUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <input type="email" id="registerEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Contraseña</label>
+                        <input type="password" id="registerPassword" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Contraseña</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Registrarse</button>
+                    <div id="registerError" class="error-message"></div>
+                </form>
+                <div class="modal-link">
+                    <p>¿Ya tienes cuenta? <a href="#" onclick="showModal('loginModal'); closeModal('registerModal')">Inicia sesión aquí</a></p>
                 </div>
-                <button type="submit" class="btn">Iniciar Sesión</button>
-                <div id="loginError" class="error-message"></div>
-            </form>
-            <div class="modal-link">
-                <p>¿No tienes cuenta? <a onclick="showRegisterModal()">Regístrate aquí</a></p>
             </div>
         </div>
     </div>
@@ -448,22 +856,9 @@
                 <div class="auth-buttons">
                     <!-- Esta sección será actualizada por auth.js -->
                 </div>
-                <div class="form-group">
-                    <label for="registerPassword">Contraseña</label>
-                    <input type="password" id="registerPassword" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">Confirmar Contraseña</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required>
-                </div>
-                <button type="submit" class="btn">Registrarse</button>
-                <div id="registerError" class="error-message"></div>
-            </form>
-            <div class="modal-link">
-                <p>¿Ya tienes cuenta? <a onclick="showLoginModal()">Inicia sesión aquí</a></p>
             </div>
-        </div>
-    </div>
+        </nav>
+    </header>
 
     <nav class="navbar">
         <div class="nav-center">
@@ -474,8 +869,8 @@
                 <a href="normas.html">Normas de Comunidad</a>
             </div>
             <div class="auth-buttons" id="authButtons">
-                <a href="#" onclick="showLoginModal()" class="btn-login">Iniciar sesión</a>
-                <a href="#" onclick="showRegisterModal()" class="btn-register">Registrarse</a>
+                <a href="login.html" onclick="showModal('loginModal')" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" onclick="showModal('registerModal')" class="btn-register">Registrarse</a>
             </div>
             <div class="user-info" id="userInfo" style="display: none;">
                 <span>Bienvenido, <span class="username" id="usernameDisplay"></span></span>
@@ -502,71 +897,41 @@
             </div>
         </div>
 
-        <div class="featured-grid">
-            <div class="featured-card">
-                <h3>Foros Populares</h3>
+        <div class="main-sections">
+            <div class="section-card">
+                <h2>Foros Populares</h2>
                 <p>Únete a las discusiones más activas sobre la vida nocturna en Barcelona</p>
-                <a href="#" class="btn">Explorar Foros</a>
+                <button class="btn explore-forums-btn">Explorar foros</button>
             </div>
-            <div class="featured-card">
-                <div>
-                    <h2>Eventos Destacados</h2>
-                    <p>Descubre los eventos más esperados de la semana</p>
-                </div>
-                <a href="eventos.html" class="btn">Ver Eventos</a>
+
+            <div class="section-card">
+                <h2>Eventos Destacados</h2>
+                <p>Descubre los eventos más esperados de la semana</p>
+                <a href="#" class="btn">Ver Eventos</a>
             </div>
-            <div class="featured-card">
-                <div>
-                    <h2>Recomendaciones</h2>
-                    <p>Las mejores recomendaciones de la comunidad</p>
-                </div>
-                <a href="recomendaciones.html" class="btn">Ver Recomendaciones</a>
+
+            <div class="section-card">
+                <h2>Recomendaciones</h2>
+                <p>Las mejores recomendaciones de la comunidad</p>
+                <a href="#" class="btn">Ver Recomendaciones</a>
             </div>
         </div>
 
-        <!-- Modal para mostrar los foros -->
-        <div id="forosModal" class="modal">
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h2>Foros Populares</h2>
-                <div class="forum-grid">
-                    <!-- Shoko -->
-                    <div class="forum-card" data-forum-id="1">
-                        <h3>Shoko Barcelona</h3>
-                        <p>El lugar de encuentro nocturno más exclusivo de Barcelona</p>
-                        <p class="location">Passeig Marítim 15, Barcelona - 0 miembros</p>
-                        <div class="forum-actions">
-                            <button onclick="saveForum(1, this)" class="btn-save">
-                                <i class="fas fa-star"></i> Guardar
-                            </button>
-                            <button onclick="viewForum(1)" class="btn-view">Ver Foro</button>
-                        </div>
-                    </div>
-                    <!-- Opium -->
-                    <div class="forum-card" data-forum-id="2">
-                        <h3>Opium Barcelona</h3>
-                        <p>La mejor experiencia nocturna frente al mar Mediterráneo</p>
-                        <p class="location">Passeig Marítim 34, Barcelona - 0 miembros</p>
-                        <div class="forum-actions">
-                            <button onclick="saveForum(2, this)" class="btn-save">
-                                <i class="fas fa-star"></i> Guardar
-                            </button>
-                            <button onclick="viewForum(2)" class="btn-view">Ver Foro</button>
-                        </div>
-                    </div>
-                    <!-- Pacha -->
-                    <div class="forum-card" data-forum-id="3">
-                        <h3>Pacha Barcelona</h3>
-                        <p>El club más icónico de Barcelona con la mejor música house</p>
-                        <p class="location">Passeig Marítim 38, Barcelona - 0 miembros</p>
-                        <div class="forum-actions">
-                            <button onclick="saveForum(3, this)" class="btn-save">
-                                <i class="fas fa-star"></i> Guardar
-                            </button>
-                            <button onclick="viewForum(3)" class="btn-view">Ver Foro</button>
-                        </div>
-                    </div>
+        <!-- Nueva sección de discotecas populares -->
+        <div id="venues-section" class="venues-section">
+            <div class="section-header">
+                <h2>Discotecas Populares</h2>
+                <p>Descubre los mejores lugares para disfrutar de la noche en Barcelona</p>
+                <div class="section-actions">
+                    <a href="foros.html" class="btn-secondary">Ver tus foros guardados</a>
                 </div>
+            </div>
+            <div id="venues-loading" class="loading-container">
+                <div class="spinner"></div>
+                <p>Cargando discotecas...</p>
+            </div>
+            <div id="venues-grid" class="forum-grid">
+                <!-- Las tarjetas de discotecas se cargarán dinámicamente aquí -->
             </div>
         </div>
 
@@ -608,8 +973,8 @@
                     <li><a href="foros.html">Tus Foros</a></li>
                     <li><a href="#">Nuevas Tendencias</a></li>
                     <li><a href="normas.html">Normas de Comunidad</a></li>
-                    <li><a href="login.html">Iniciar sesión</a></li>
-                    <li><a href="register.html">Registrarse</a></li>
+                    <li><a href="#" onclick="showModal('loginModal')">Iniciar sesión</a></li>
+                    <li><a href="#" onclick="showModal('registerModal')">Registrarse</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -623,7 +988,278 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="js/auth.js"></script>
-    <script src="script.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/forum.js"></script>
+    <script>
+        // Script para mostrar las venues en la página principal
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Script de venues cargado');
+            
+            // Elementos DOM
+            const exploreBtn = document.querySelector('.explore-forums-btn');
+            const venuesSection = document.getElementById('venues-section');
+            const venuesLoading = document.getElementById('venues-loading');
+            const venuesGrid = document.getElementById('venues-grid');
+            
+            console.log('Elementos DOM:', { 
+                exploreBtn: !!exploreBtn, 
+                venuesSection: !!venuesSection, 
+                venuesLoading: !!venuesLoading,
+                venuesGrid: !!venuesGrid 
+            });
+            
+            // Verificar si el usuario está autenticado
+            let isAuthenticated = false;
+            let savedForums = [];
+            
+            // Obtener información del usuario desde localStorage
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (currentUser && currentUser.authenticated) {
+                isAuthenticated = true;
+                console.log('Usuario autenticado desde localStorage:', currentUser.username);
+            }
+            
+            // Cargar foros guardados desde localStorage
+            const savedForumsFromStorage = JSON.parse(localStorage.getItem('savedForums') || '[]');
+            savedForums = savedForumsFromStorage;
+            console.log('Foros guardados desde localStorage:', savedForums);
+            
+            // Configurar event listener para el botón de explorar foros
+            if (exploreBtn) {
+                exploreBtn.addEventListener('click', function() {
+                    console.log('Botón explore-forums-btn clickeado');
+                    
+                    if (venuesSection) {
+                        // Mostrar la sección de discotecas populares
+                        venuesSection.style.display = 'block';
+                        
+                        // Mostrar indicador de carga
+                        if (venuesLoading) {
+                            venuesLoading.style.display = 'block';
+                        }
+                        
+                        // Cargar venues desde localStorage
+                        loadVenuesFromLocalStorage();
+                    } else {
+                        console.error('Sección de discotecas populares no encontrada');
+                    }
+                });
+            } else {
+                console.error('Botón explore-forums-btn no encontrado');
+            }
+            
+            function loadVenuesFromLocalStorage() {
+                try {
+                    // Obtener venues desde localStorage
+                    const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                    const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                    
+                    // Combinar venues y clubs (pueden tener estructura ligeramente diferente)
+                    let allVenues = [...venues];
+                    
+                    // Añadir clubs que no estén ya en venues
+                    clubs.forEach(club => {
+                        // Verificar si el club ya existe en venues
+                        const exists = allVenues.some(v => 
+                            v.id === club.id || 
+                            (v.name && club.nombre && v.name.toLowerCase() === club.nombre.toLowerCase())
+                        );
+                        
+                        if (!exists) {
+                            // Convertir formato de club a venue
+                            allVenues.push({
+                                id: club.id || Date.now().toString(),
+                                name: club.nombre || club.name,
+                                description: club.descripcion || club.description,
+                                location: club.direccion || club.location,
+                                contact_info: club.telefono || club.contact_info,
+                                members: 0,
+                                follower_count: club.follower_count || 0,
+                                rating: club.rating || 0
+                            });
+                        }
+                    });
+                    
+                    console.log('Venues cargadas desde localStorage:', allVenues);
+                    
+                    if (venuesGrid) {
+                        if (allVenues.length > 0) {
+                            console.log(`Se encontraron ${allVenues.length} venues`);
+                            
+                            // Limpiar el contenido anterior
+                            venuesGrid.innerHTML = '';
+                            
+                            // Crear tarjetas para cada venue en una sola fila horizontal
+                            allVenues.forEach(venue => {
+                                console.log('Renderizando venue:', venue);
+                                
+                                const isSaved = savedForums.includes(venue.id) || 
+                                              savedForums.some(f => f.venue_id === venue.id || f.id === venue.id);
+                                
+                                const card = document.createElement('div');
+                                card.className = 'forum-card';
+                                card.dataset.forumId = venue.id;
+                                card.innerHTML = `
+                                    <h3>${venue.name || venue.nombre || 'Sin nombre'}</h3>
+                                    <p>${venue.description || venue.descripcion || 'Sin descripción disponible'}</p>
+                                    <p class="location">${venue.location || venue.direccion || 'Ubicación no disponible'} - ${venue.members || venue.follower_count || 0} miembros</p>
+                                    <div class="forum-actions">
+                                        <button onclick="saveForum('${venue.id}', this)" class="btn-save ${isSaved ? 'saved' : ''}">
+                                            <i class="fas fa-star"></i> ${isSaved ? 'Guardado' : 'Guardar'}
+                                        </button>
+                                        <button onclick="viewForum('${venue.id}')" class="btn-view">Ver Foro</button>
+                                    </div>
+                                `;
+                                
+                                venuesGrid.appendChild(card);
+                            });
+                            
+                            console.log('Tarjetas de venues renderizadas correctamente');
+                        } else {
+                            venuesGrid.innerHTML = `
+                                <div class="no-venues">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>No se encontraron discotecas. ¡Sé el primero en añadir una!</p>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Solo intentar cargar desde la API si no hay venues en localStorage
+                    if (allVenues.length === 0) {
+                        // Intentar cargar desde la API como fallback
+                        fetch('/api/venues')
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error(`Error al cargar venues: ${response.status}`);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                console.log('Respuesta de API venues:', data);
+                                
+                                if (data.success && data.venues && data.venues.length > 0) {
+                                    // Guardar en localStorage para futuras cargas
+                                    localStorage.setItem('venues', JSON.stringify(data.venues));
+                                    
+                                    // Recargar venues
+                                    loadVenuesFromLocalStorage();
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error al cargar venues desde API:', error);
+                                venuesGrid.innerHTML = `
+                                    <div class="no-venues">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <p>Error al cargar discotecas: ${error.message}</p>
+                                    </div>
+                                `;
+                            });
+                    }
+                } catch (error) {
+                    console.error('Error al cargar venues desde localStorage:', error);
+                    venuesGrid.innerHTML = `
+                        <div class="no-venues">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Error al cargar discotecas: ${error.message}</p>
+                        </div>
+                    `;
+                } finally {
+                    if (venuesLoading) {
+                        venuesLoading.style.display = 'none';
+                    }
+                }
+            }
+        });
+        
+        // Funciones globales para los botones de los foros
+        function saveForum(forumId, button) {
+    console.log('saveForum llamado con ID:', forumId);
+    
+    // Verificar autenticación desde localStorage
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    console.log('Estado de autenticación:', currentUser);
+    
+    if (!currentUser || !currentUser.authenticated) {
+        console.log('Usuario no autenticado, redirigiendo a login');
+        
+        // Redireccionar a la página de login
+        window.location.href = '/login.html';
+        return;
+    }
+            
+            // Mostrar indicador de carga en el botón
+            const originalButtonText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+            
+            try {
+                // Obtener foros guardados
+                const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                
+                // Verificar si ya está guardado
+                const index = savedForums.findIndex(f => f === forumId || f === parseInt(forumId) || (typeof f === 'object' && f.id === forumId));
+                
+                if (index >= 0) {
+                    // Si ya está guardado, eliminarlo
+                    savedForums.splice(index, 1);
+                    button.classList.remove('saved');
+                    button.innerHTML = '<i class="fas fa-star"></i> Guardar';
+                    
+                    // Mostrar notificación
+                    showNotification('Foro eliminado de tus guardados');
+                } else {
+                    // Si no está guardado, añadirlo
+                    savedForums.push(forumId);
+                    button.classList.add('saved');
+                    button.innerHTML = '<i class="fas fa-star"></i> Guardado';
+                    
+                    // Mostrar notificación
+                    showNotification('Foro guardado correctamente');
+                }
+                
+                // Guardar en localStorage
+                localStorage.setItem('savedForums', JSON.stringify(savedForums));
+                
+                button.disabled = false;
+            } catch (error) {
+                console.error('Error al guardar foro:', error);
+                button.innerHTML = originalButtonText;
+                button.disabled = false;
+                showNotification('Error al procesar tu solicitud', 'error');
+            }
+        }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message, type = 'success') {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            // Añadir al DOM
+            document.body.appendChild(notification);
+            
+            // Mostrar con animación
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Ocultar después de 3 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
 </body>
 </html>

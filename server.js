@@ -2,103 +2,168 @@ const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
-const mysql = require('mysql2/promise');
-const mysql = require('mysql2/promise');
 const path = require('path');
+const mysql = require('mysql2/promise');
 
 const app = express();
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 
-// Configuración básica
-app.use(express.json());
-app.use(express.static('public'));
-
-// Conexión a la base de datos
-const pool = mysql.createPool({
+// Configuración de la base de datos
+const dbConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
     database: 'forodisco'
-});
+};
 
-// Ruta principal
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// Pool de conexiones MySQL
+const pool = mysql.createPool(dbConfig);
 
-// Middleware para procesar JSON y datos de formulario
+// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuración de CORS
+app.use(express.static('public'));
 app.use(cors({
-    origin: 'http://localhost:3002',
+    origin: true,
     credentials: true
 }));
 
-// Configuración de sesiones
 app.use(session({
-    secret: 'tu_secreto_aqui',
+    secret: 'forodisco_secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false,
+        secure: false, // set to true in production with HTTPS
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000 // 24 horas
     }
 }));
 
-// Servir archivos estáticos - IMPORTANTE: debe ir después de la configuración de sesión y CORS
-app.use(express.static('public'));
-app.use('/admin', express.static(path.join(__dirname, 'public/admin')));
-
-// Middleware para verificar si el usuario es admin
-const isAdmin = (req, res, next) => {
-    console.log('Verificando admin:', {
-        userId: req.session.userId,
-        role: req.session.role,
-        session: req.session
-    });
-    
-    if (!req.session.userId || req.session.role !== 'admin') {
-        return res.status(403).json({
-            success: false,
-            message: 'Acceso denegado - No eres administrador'
-        });
+// Inicializar la base de datos
+async function initializeDatabase() {
+    const connection = await pool.getConnection();
+    try {
+        // Crear tabla de usuarios si no existe
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                email VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_admin BOOLEAN DEFAULT FALSE
+            )
+        `);
+        
+        // Crear tabla de venues si no existe
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS venues (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                description TEXT,
+                location VARCHAR(100),
+                image_url VARCHAR(255),
+                website VARCHAR(255),
+                capacity INT,
+                members INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        // Crear tabla de foros guardados por usuario si no existe
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS user_forums (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                forum_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY user_forum_unique (user_id, forum_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        
+        console.log('Base de datos inicializada correctamente');
+    } catch (error) {
+        console.error('Error al inicializar la base de datos:', error);
+    } finally {
+        connection.release();
     }
-    next();
-};
+}
 
-// Rutas de la API
-app.get('/api/check-auth', (req, res) => {
-    if (req.session.userId) {
-        res.json({
-            authenticated: true,
-            username: req.session.username,
-            role: req.session.role
-        });
-    } else {
-        res.json({
-            authenticated: false
-        });
-    }
-});
-
-// Ruta específica para el panel de admin
-app.get('/admin/venues', (req, res) => {
-    if (!req.session.userId || req.session.role !== 'admin') {
-        return res.redirect('/login.html');
-    }
-    res.sendFile(path.join(__dirname, 'public/admin/venues.html'));
-});
+// Inicializar la base de datos al arrancar el servidor
+initializeDatabase();
 
 // Ruta de registro
 app.post('/api/register', async (req, res) => {
-// Ruta de login
+    try {
+        const { username, email, password } = req.body;
+
+        // Validaciones básicas
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Todos los campos son requeridos'
+            });
+        }
+
+        const connection = await pool.getConnection();
+
+        try {
+            // Verificar si el usuario ya existe
+            const [existingUsers] = await connection.query(
+                'SELECT id FROM users WHERE username = ? OR email = ?',
+                [username, email]
+            );
+
+            if (existingUsers.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nombre de usuario o email ya está en uso'
+                });
+            }
+
+            // Hash de la contraseña
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Obtener el ID del rol 'usuario'
+            const [roles] = await connection.query(
+                'SELECT id FROM roles WHERE name = ?',
+                ['usuario']
+            );
+
+            if (roles.length === 0) {
+                throw new Error('Rol de usuario no encontrado');
+            }
+
+            // Insertar el nuevo usuario
+            const [result] = await connection.query(
+                'INSERT INTO users (username, email, password_hash, role_id) VALUES (?, ?, ?, ?)',
+                [username, email, hashedPassword, roles[0].id]
+            );
+
+            // Iniciar sesión automáticamente
+            req.session.userId = result.insertId;
+            req.session.username = username;
+
+            res.status(201).json({
+                success: true,
+                message: 'Usuario registrado exitosamente'
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error en el registro:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al registrar el usuario'
+        });
+    }
+});
+
+// Ruta de inicio de sesión
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log('Intento de login:', { email, password }); // Para debug
 
         if (!email || !password) {
             return res.status(400).json({
@@ -108,231 +173,70 @@ app.post('/api/login', async (req, res) => {
         }
 
         const connection = await pool.getConnection();
-        
+
         try {
-            // Verificar si el usuario ya existe
-            const [existingUsers] = await connection.query(
-                'SELECT id FROM user_forums WHERE username = ? OR email = ?',
-                [username, email]
+            // Buscar usuario por email
             const [users] = await connection.query(
-                'SELECT * FROM users WHERE email = ?',
+                'SELECT id, username, password_hash FROM users WHERE email = ?',
                 [email]
             );
-
-            // Para el usuario admin, permitir acceso directo
-            if (email === 'admin@forodisco.com' && password === 'admin123') {
-                return res.json({
-                    success: true,
-                    message: 'Login exitoso',
-                    user: {
-                        id: 1, // ID fijo para el admin
-                        email: email,
-                        username: 'admin'
-                    }
-                });
-            }
-
-            if (users.length === 0) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Usuario no encontrado'
-                });
-            }
-
-            const user = users[0];
-
-            // Por defecto, los nuevos usuarios tienen role_id = 3 (usuario normal)
-            const [result] = await connection.query(
-                'INSERT INTO user_forums (username, email, password, role_id) VALUES (?, ?, ?, 3)',
-                [username, email, hashedPassword]
-            );
-            // Para otros usuarios, verificar contraseña
-            if (user.password !== password) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Contraseña incorrecta'
-                });
-            }
-
-            res.json({
-                success: true,
-                message: 'Login exitoso',
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    username: user.username
-                }
-            });
-
-            // Iniciar sesión automáticamente
-            req.session.userId = result.insertId;
-            req.session.username = username;
-            req.session.role = 'usuario';
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        console.error('Error en login:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error en el servidor'
-        });
-    }
-});
-
-// Ruta para obtener todos los foros
-app.get('/api/forums', async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        try {
-            const [forums] = await connection.query(`
-                SELECT 
-                    *,
-                    nombre as name
-                FROM forums
-                ORDER BY created_at DESC
-            `);
-            
-            res.json({
-                success: true,
-                forums
-            });
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        console.error('Error al obtener foros:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al obtener los foros'
-        });
-    }
-});
-
-// Ruta para guardar un foro
-app.post('/api/forums/:forumId/save', async (req, res) => {
-    try {
-        const { forumId } = req.params;
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requiere el ID del usuario'
-            });
-        }
-
-        const connection = await pool.getConnection();
-        
-        try {
-            // Buscar usuario y su rol
-            const [users] = await connection.query(
-                'SELECT users.*, roles.name as role_name FROM users JOIN roles ON users.role_id = roles.id WHERE users.email = ?',
-                [email]
-            // Verificar si el foro ya está guardado
-            const [existing] = await connection.query(
-                'SELECT * FROM saved_forums WHERE user_id = ? AND forum_id = ?',
-                [userId, forumId]
-            );
-
-            console.log('Usuario encontrado:', users[0]); // Para debug
 
             if (users.length === 0) {
                 return res.status(401).json({
                     success: false,
                     message: 'Credenciales inválidas'
-            if (existing.length > 0) {
-                return res.json({
-                    success: true,
-                    message: 'El foro ya está guardado'
                 });
             }
 
-            // Guardar el foro
-            await connection.query(
-                'INSERT INTO saved_forums (user_id, forum_id) VALUES (?, ?)',
-                [userId, forumId]
-            );
+            const user = users[0];
 
             // Verificar contraseña
             const validPassword = await bcrypt.compare(password, user.password_hash);
-            console.log('Contraseña válida:', validPassword); // Para debug
-            res.json({
-                success: true,
-                message: 'Foro guardado exitosamente'
-            });
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        console.error('Error al guardar el foro:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al guardar el foro'
-        });
-    }
-});
 
-// Ruta para obtener los foros guardados de un usuario
-app.get('/api/users/:userId/saved-forums', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        console.log('Obteniendo foros guardados para usuario:', userId);
+            if (!validPassword) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Credenciales inválidas'
+                });
+            }
 
             // Establecer sesión
             req.session.userId = user.id;
             req.session.username = user.username;
-            req.session.role = user.role_name;
-        const connection = await pool.getConnection();
-        
-        try {
-            const [forums] = await connection.query(`
-                SELECT 
-                    f.*,
-                    COALESCE(f.nombre, 'Sin título') as nombre,
-                    COALESCE(f.description, 'Sin descripción') as description,
-                    COALESCE(f.location, '') as location
-                FROM forums f 
-                JOIN saved_forums sf ON f.id = sf.forum_id 
-                WHERE sf.user_id = ?
-                ORDER BY sf.created_at DESC
-            `, [userId]);
-
-            console.log('Foros encontrados:', forums);
 
             res.json({
                 success: true,
-                message: 'Inicio de sesión exitoso',
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    role: user.role_name
-                }
-                forums: forums.map(forum => ({
-                    ...forum,
-                    name: forum.nombre // Mapear nombre a name para mantener compatibilidad
-                }))
+                message: 'Inicio de sesión exitoso'
             });
-        } catch (error) {
-            console.error('Error en la consulta:', error);
-            throw error;
         } finally {
             connection.release();
         }
     } catch (error) {
-        console.error('Error completo en el inicio de sesión:', error);
-        console.error('Error al obtener foros guardados:', error);
+        console.error('Error en el inicio de sesión:', error);
         res.status(500).json({
             success: false,
-            message: 'Error al iniciar sesión: ' + error.message
-            message: 'Error al obtener foros guardados'
+            message: 'Error al iniciar sesión'
         });
     }
 });
 
-// Ruta para cerrar sesión
+// Ruta para verificar sesión
+app.get('/api/check-auth', (req, res) => {
+    if (req.session.userId) {
+        res.json({
+            authenticated: true,
+            username: req.session.username
+        });
+    } else {
+        res.json({
+            authenticated: false
+        });
+    }
+});
+
+// Ruta de cierre de sesión
 app.post('/api/logout', (req, res) => {
-    req.session.destroy((err) => {
+    req.session.destroy(err => {
         if (err) {
             return res.status(500).json({
                 success: false,
@@ -341,260 +245,361 @@ app.post('/api/logout', (req, res) => {
         }
         res.json({
             success: true,
-            message: 'Sesión cerrada correctamente'
-// Ruta para eliminar un foro guardado
-app.delete('/api/forums/:forumId/save', async (req, res) => {
-    try {
-        const { forumId } = req.params;
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Se requiere el ID del usuario'
-            });
-        }
-
-        const connection = await pool.getConnection();
-        
-        try {
-            await connection.query(
-                'DELETE FROM saved_forums WHERE user_id = ? AND forum_id = ?',
-                [userId, forumId]
-            );
-
-            res.json({
-                success: true,
-                message: 'Foro eliminado exitosamente'
-            });
-        } finally {
-            connection.release();
-        }
-    } catch (error) {
-        console.error('Error al eliminar el foro:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al eliminar el foro'
+            message: 'Sesión cerrada exitosamente'
         });
     });
 });
 
-// Ruta para obtener todas las discotecas
-app.get('/api/clubs', async (req, res) => {
-    try {
-        const [clubs] = await pool.query('SELECT * FROM discotecas');
-        res.json({
-            success: true,
-            clubs
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al obtener las discotecas'
-        });
-    }
-});
-
-// Ruta para registrar una nueva discoteca (solo admin)
-app.post('/api/clubs', isAdmin, async (req, res) => {
-    try {
-        const { nombre, direccion, telefono, horario, descripcion } = req.body;
-
-        // Validaciones básicas
-        if (!nombre || !direccion || !telefono || !horario || !descripcion) {
-            return res.status(400).json({
-                success: false,
-                message: 'Todos los campos son requeridos'
-// Ruta para buscar venues
-app.get('/api/search/venues', async (req, res) => {
-    try {
-        const { query } = req.query;
-        const connection = await pool.getConnection();
-        
-        try {
-            let sql = `
-                SELECT * FROM venues 
-                WHERE name LIKE ? 
-                OR description LIKE ? 
-                OR location LIKE ?
-            `;
-            
-            const searchTerm = `%${query}%`;
-            const [venues] = await connection.query(sql, [searchTerm, searchTerm, searchTerm]);
-            
-            console.log('Resultados de búsqueda:', venues);
-
-            res.json({
-                success: true,
-                venues: venues.map(venue => ({
-                    id: venue.id,
-                    name: venue.name,
-                    description: venue.description,
-                    location: venue.location
-                }))
-            });
-        } finally {
-            connection.release();
-        }
-
-        // Insertar la discoteca en la base de datos
-        const [result] = await pool.query(
-            'INSERT INTO discotecas (nombre, direccion, telefono, horario, descripcion) VALUES (?, ?, ?, ?, ?)',
-            [nombre, direccion, telefono, horario, descripcion]
-        );
-
-        res.json({
-            success: true,
-            message: 'Discoteca registrada correctamente',
-            clubId: result.insertId
-    } catch (error) {
-        console.error('Error en la búsqueda:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al realizar la búsqueda'
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al registrar la discoteca'
-        });
-    }
-    }
-});
-
-// Ruta para crear usuario admin (temporal)
-app.post('/api/create-admin', async (req, res) => {
-    try {
-        const adminPassword = 'admin123';
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
-        
-        const [result] = await pool.query(
-            'INSERT INTO users (username, email, password_hash, role_id) VALUES (?, ?, ?, ?)',
-            ['admin', 'admin@forodisco.com', hashedPassword, 1]
-        );
-
-        res.json({
-            success: true,
-            message: 'Admin creado correctamente',
-            hashedPassword: hashedPassword
-        });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al crear admin: ' + error.message
-        });
-    }
-});
-
 // Ruta para obtener todas las venues
 app.get('/api/venues', async (req, res) => {
-    console.log('GET /api/venues llamado');
     try {
         const connection = await pool.getConnection();
         try {
-            const [venues] = await connection.query('SELECT * FROM venues');
-            console.log('Venues encontradas:', venues);
-            res.json({
-                success: true,
-                venues
-            });
-        } catch (error) {
-            console.error('Error al consultar venues:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Error al obtener las venues'
-            });
+            // Verificar si la tabla venues existe
+            const [tables] = await connection.query("SHOW TABLES LIKE 'venues'");
+            
+            // Si la tabla no existe, crearla
+            if (tables.length === 0) {
+                console.log('La tabla venues no existe, creándola...');
+                await connection.query(`
+                    CREATE TABLE venues (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        location VARCHAR(255),
+                        members INT DEFAULT 0
+                    )
+                `);
+                console.log('Tabla venues creada correctamente');
+            }
+            
+            // Obtener todas las venues
+            const [venues] = await connection.query('SELECT * FROM venues ORDER BY name');
+            
+            // Si no hay venues, insertar datos de prueba
+            if (venues.length === 0) {
+                console.log('No se encontraron venues, insertando datos de prueba...');
+                
+                // Datos de prueba
+                const venuesData = [
+                    {
+                        name: 'Shoko Barcelona',
+                        description: 'El lugar de encuentro nocturno más exclusivo de Barcelona',
+                        location: 'Passeig Marítim 15, Barcelona',
+                        members: 0
+                    },
+                    {
+                        name: 'Opium Barcelona',
+                        description: 'La mejor experiencia nocturna frente al mar Mediterráneo',
+                        location: 'Passeig Marítim 34, Barcelona',
+                        members: 0
+                    },
+                    {
+                        name: 'Pacha Barcelona',
+                        description: 'El club más icónico de Barcelona con la mejor música house',
+                        location: 'Passeig Marítim 38, Barcelona',
+                        members: 0
+                    },
+                    {
+                        name: 'Razzmatazz',
+                        description: 'El templo de la música alternativa en Barcelona',
+                        location: 'Carrer dels Almogàvers 122, Barcelona',
+                        members: 0
+                    },
+                    {
+                        name: 'Sala Apolo',
+                        description: 'Uno de los clubs con más historia de Barcelona',
+                        location: 'Carrer Nou de la Rambla 113, Barcelona',
+                        members: 0
+                    }
+                ];
+                
+                // Insertar venues de prueba
+                for (const venue of venuesData) {
+                    await connection.query(
+                        'INSERT INTO venues (name, description, location, members) VALUES (?, ?, ?, ?)',
+                        [venue.name, venue.description, venue.location, venue.members]
+                    );
+                }
+                
+                // Obtener las venues recién insertadas
+                const [newVenues] = await connection.query('SELECT * FROM venues ORDER BY name');
+                console.log(`Se insertaron ${newVenues.length} venues de prueba`);
+                res.json({ success: true, venues: newVenues });
+            } else {
+                console.log(`Se encontraron ${venues.length} venues existentes`);
+                res.json({ success: true, venues });
+            }
         } finally {
             connection.release();
         }
     } catch (error) {
-        console.error('Error de conexión:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error de conexión a la base de datos'
-        });
+        console.error('Error al obtener venues:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener venues', error: error.message });
     }
 });
 
-// Ruta para registrar una nueva venue (solo admin)
-app.post('/api/venues', isAdmin, async (req, res) => {
-    console.log('POST /api/venues llamado');
+// Ruta para crear una nueva venue
+app.post('/api/venues', async (req, res) => {
     try {
-        const { name, description, location, contact_info } = req.body;
-        
-        console.log('Datos recibidos:', {
-            body: req.body,
-            session: req.session,
-            headers: req.headers
-        });
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
 
-        if (!name || !description || !location || !contact_info) {
-            return res.status(400).json({
-                success: false,
-                message: 'Los campos name, description, location y contact_info son requeridos'
-            });
+        const { name, location, description, contact_info } = req.body;
+
+        if (!name || !location) {
+            return res.status(400).json({ success: false, message: 'Nombre y ubicación son requeridos' });
         }
 
         const connection = await pool.getConnection();
         try {
-            console.log('Intentando insertar venue con los siguientes datos:', {
-                name,
-                description,
-                location,
-                contact_info,
-                admin_id: req.session.userId
-            });
-            
             const [result] = await connection.query(
-                'INSERT INTO venues (name, description, location, contact_info, admin_id, follower_count, rating) VALUES (?, ?, ?, ?, ?, 0, 0)',
-                [name, description, location, contact_info, req.session.userId]
+                'INSERT INTO venues (name, location, description, contact_info) VALUES (?, ?, ?, ?)',
+                [name, location, description, contact_info]
             );
 
-            console.log('Venue insertada con éxito:', result);
+            // Crear un foro asociado a la venue
+            await connection.query(
+                'INSERT INTO forums (title, description, venue_id) VALUES (?, ?, ?)',
+                [name, description, result.insertId]
+            );
 
-            res.json({
-                success: true,
-                message: 'Venue registrada correctamente',
-                venueId: result.insertId
-            });
-        } catch (error) {
-            console.error('Error al insertar en la base de datos:', {
-                error: error,
-                sqlMessage: error.sqlMessage,
-                sqlState: error.sqlState
-            });
-            throw error;
+            res.status(201).json({ success: true, message: 'Venue creada exitosamente', venueId: result.insertId });
         } finally {
             connection.release();
         }
     } catch (error) {
-        console.error('Error completo:', {
-            error: error,
-            message: error.message,
-            stack: error.stack
-        });
-        res.status(500).json({
-            success: false,
-            message: 'Error al registrar la venue: ' + error.message
+        console.error('Error al crear venue:', error);
+        res.status(500).json({ success: false, message: 'Error al crear venue' });
+    }
+});
+
+// Ruta para buscar venues
+app.get('/api/search', async (req, res) => {
+    try {
+        const query = req.query.q || '';
+        
+        if (!query.trim()) {
+            return res.json({ success: true, results: [] });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            const searchTerm = `%${query}%`;
+            const [venues] = await connection.query(
+                'SELECT * FROM venues WHERE name LIKE ? OR description LIKE ? OR location LIKE ? LIMIT 10',
+                [searchTerm, searchTerm, searchTerm]
+            );
+            
+            res.json({ success: true, results: venues });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error en la búsqueda:', error);
+        res.status(500).json({ success: false, message: 'Error al realizar la búsqueda' });
+    }
+});
+
+// Ruta para obtener foros guardados por el usuario
+app.get('/api/user/forums', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            const [forums] = await connection.query(
+                `SELECT f.*, v.name as venue_name, v.location as venue_location 
+                FROM forums f 
+                JOIN user_forums uf ON f.id = uf.forum_id 
+                LEFT JOIN venues v ON f.venue_id = v.id 
+                WHERE uf.user_id = ?`,
+                [req.session.userId]
+            );
+            
+            res.json({ success: true, forums });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener foros del usuario:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener foros' });
+    }
+});
+
+// Ruta para guardar un foro
+app.post('/api/user/forums', async (req, res) => {
+    try {
+        console.log('Recibida petición para guardar foro:', req.body);
+        
+        if (!req.session.userId) {
+            console.log('Usuario no autenticado');
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        console.log('Usuario autenticado con ID:', req.session.userId);
+
+        const { forumId } = req.body;
+
+        if (!forumId) {
+            console.log('ID del foro no proporcionado');
+            return res.status(400).json({ success: false, message: 'ID del foro es requerido' });
+        }
+        console.log('ID del foro a guardar:', forumId);
+
+        // Asegurarnos de que forumId es un número
+        const forumIdNum = parseInt(forumId, 10);
+        if (isNaN(forumIdNum)) {
+            console.log('ID del foro no es un número válido');
+            return res.status(400).json({ success: false, message: 'ID del foro debe ser un número' });
+        }
+
+        // Primero, verificar si la tabla user_forums existe
+        const connection = await pool.getConnection();
+        try {
+            // Crear la tabla user_forums si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS user_forums (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    forum_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_forum_unique (user_id, forum_id)
+                )
+            `);
+            console.log('Tabla user_forums verificada/creada');
+
+            console.log('Verificando si el venue existe...');
+            // Verificar si el venue existe (ya que estamos guardando venues como foros)
+            const [venues] = await connection.query('SELECT id FROM venues WHERE id = ?', [forumIdNum]);
+            console.log('Resultado de la consulta de venues:', venues);
+            
+            if (venues.length === 0) {
+                console.log('Venue no encontrada');
+                return res.status(404).json({ success: false, message: 'Venue no encontrada' });
+            }
+            console.log('Venue encontrada');
+
+            console.log('Verificando si el foro ya está guardado...');
+            // Verificar si ya está guardado
+            const [existingForum] = await connection.query(
+                'SELECT id FROM user_forums WHERE user_id = ? AND forum_id = ?',
+                [req.session.userId, forumIdNum]
+            );
+            console.log('Resultado de la consulta de foros existentes:', existingForum);
+
+            if (existingForum.length > 0) {
+                console.log('Foro ya guardado');
+                return res.json({ success: true, message: 'Foro ya guardado', alreadySaved: true });
+            }
+            console.log('Foro no guardado previamente, procediendo a guardar');
+
+            // Guardar el foro
+            console.log('Insertando foro en la tabla user_forums...');
+            try {
+                const result = await connection.query(
+                    'INSERT INTO user_forums (user_id, forum_id) VALUES (?, ?)',
+                    [req.session.userId, forumIdNum]
+                );
+                console.log('Foro guardado exitosamente, resultado:', result);
+                res.status(201).json({ success: true, message: 'Foro guardado exitosamente' });
+            } catch (insertError) {
+                console.error('Error específico al insertar foro:', insertError);
+                throw insertError;
+            }
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error detallado al guardar foro:', error);
+        // Devolver información más detallada sobre el error
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error al guardar foro: ' + error.message
         });
     }
 });
 
-// IMPORTANTE: Esta debe ser la ÚLTIMA ruta
-app.get('*', (req, res) => {
-    // No redirigir las rutas /admin/* al index
-    if (req.path.startsWith('/admin/')) {
-        res.status(404).send('Not found');
-        return;
+// Ruta para eliminar un foro guardado
+app.delete('/api/user/forums/:id', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const forumId = req.params.id;
+
+        const connection = await pool.getConnection();
+        try {
+            await connection.query(
+                'DELETE FROM user_forums WHERE user_id = ? AND forum_id = ?',
+                [req.session.userId, forumId]
+            );
+
+            res.json({ success: true, message: 'Foro eliminado exitosamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar foro:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar foro' });
     }
+});
+
+// Ruta para obtener información del usuario actual
+app.get('/api/auth/current-user', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            const [users] = await connection.query(
+                'SELECT id, username, email, role_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            const user = users[0];
+            
+            // Obtener el rol
+            const [roles] = await connection.query(
+                'SELECT name FROM roles WHERE id = ?',
+                [user.role_id]
+            );
+
+            const role = roles.length > 0 ? roles[0].name : 'usuario';
+
+            res.json({
+                success: true,
+                user: {
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    role: role
+                }
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener usuario actual:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener usuario' });
+    }
+});
+
+// Servir archivos estáticos para cualquier otra ruta
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Iniciar el servidor
-// Iniciar servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
