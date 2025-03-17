@@ -83,6 +83,27 @@
     </style>
 </head>
 <body>
+    <!-- Barra de navegación -->
+    <nav class="navbar" style="background-color: black; padding: 1rem 2rem; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+        <div class="nav-center" style="display: flex; align-items: center; gap: 4rem;">
+            <a href="index.html" class="nav-brand" style="color: #ff4b6e; font-weight: bold; text-decoration: none; font-size: 1.5rem;">ForoDisco</a>
+            <div class="nav-links" style="display: flex; gap: 2rem;">
+                <a href="index.html" style="color: white; text-decoration: none; transition: color 0.3s ease; font-size: 1.1rem;">Inicio</a>
+                <a href="foros.html" style="color: white; text-decoration: none; transition: color 0.3s ease; font-size: 1.1rem;">Tus Foros</a>
+                <a href="tendencias.html" style="color: white; text-decoration: none; transition: color 0.3s ease; font-size: 1.1rem;">Nuevas Tendencias</a>
+                <a href="normas.html" style="color: white; text-decoration: none; transition: color 0.3s ease; font-size: 1.1rem;">Normas de Comunidad</a>
+            </div>
+            <div class="user-info" id="userInfo" style="color: white; display: none; align-items: center; gap: 1rem;">
+                <span>Bienvenido, <span id="usernameDisplay" class="username" style="color: #ff4b6e; font-weight: bold;">Usuario</span></span>
+                <a href="#" onclick="logoutUser()" class="btn-logout" style="color: white; border: 1px solid white; background: transparent; text-decoration: none; transition: all 0.3s ease; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 20px;">Cerrar sesión</a>
+            </div>
+            <div class="auth-buttons" id="authButtons" style="display: flex; gap: 1rem; align-items: center;">
+                <a href="login.html" class="btn-login" style="background-color: white; color: black; border: 1px solid white; text-decoration: none; transition: all 0.3s ease; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 20px;">Iniciar sesión</a>
+                <a href="register.html" class="btn-register" style="color: white; border: 1px solid white; background: transparent; text-decoration: none; transition: all 0.3s ease; font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 20px;">Registrarse</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <h1>Crear Usuario Administrador</h1>
         
@@ -103,7 +124,13 @@
         <a href="index.html" class="home-link">Volver a la página principal</a>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+
         function createAdmin() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -150,6 +177,29 @@
             resultElement.textContent = message;
             resultElement.className = type;
             resultElement.style.display = 'block';
+        }
+        
+        // Función de logout directa
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación o alerta
+                alert('Sesión cerrada correctamente');
+                
+                // Redirigir a la página principal
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
         }
     </script>
 </body>

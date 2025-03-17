@@ -403,9 +403,13 @@
                 <a href="index.html">Inicio</a>
                 <a href="foros.html">Tus Foros</a>
                 <a href="tendencias.html">Nuevas Tendencias</a>
-                <a href="search.html">Buscar</a>
+                <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="auth-buttons">
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span id="usernameDisplay" class="username">Usuario</span></span>
+                <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
+            </div>
+            <div class="auth-buttons" id="authButtons">
                 <a href="login.html" class="btn-login">Iniciar sesión</a>
                 <a href="register.html" class="btn-register">Registrarse</a>
             </div>
@@ -563,6 +567,30 @@
                 errorMessage.style.display = 'block';
             }
         });
+        
+        // Función de logout directa
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación o alerta
+                alert('Sesión cerrada correctamente');
+                
+                // Recargar la página
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
     </script>
+    <script src="js/auth.js"></script>
 </body>
 </html>

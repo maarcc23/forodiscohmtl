@@ -68,50 +68,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Función para verificar autenticaciónn
-function checkAuth() {
-    console.log('Verificando autenticación...');
+    // Función para verificar autenticación
+    function checkAuth() {
+        console.log('Verificando autenticación...');
+        
+        // Obtener información del usuario desde localStorage
+        currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        isAuthenticated = currentUser && currentUser.authenticated;
+        
+        console.log('Estado de autenticación:', { isAuthenticated, currentUser });
+        
+        // Actualizar UI según el estado de autenticación
+        updateAuthUI();
+        
+        return isAuthenticated;
+    }
     
-    // Obtener información del usuario desde localStorage
-    currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-    isAuthenticated = currentUser && currentUser.authenticated;
-    
-    console.log('Estado de autenticación:', { isAuthenticated, currentUser });
-    
-    // Actualizar UI según el estado de autenticación
-    updateAuthUI();
-    
-    return isAuthenticated;
-}
-    
-    // Actualizar interfaz según estado de autenticación
+    // Función para actualizar la interfaz de usuario según el estado de autenticación
     function updateAuthUI(authStatus) {
-        if (authStatus.authenticated) {
-            // Usuario autenticado
-            if (authButtons) authButtons.style.display = 'none';
-            if (userInfo) {
-                userInfo.style.display = 'flex';
-                
-                // Mostrar nombre de usuario
-                const user = authStatus.user || JSON.parse(localStorage.getItem('currentUser')) || {};
-                if (usernameDisplay) {
-                    usernameDisplay.textContent = user.username || user.email || 'Usuario';
-                }
-                
-                // Mostrar opciones según rol
-                const isAdmin = user.role === 'admin';
-                const adminLink = document.getElementById('adminLink');
-                if (adminLink) {
-                    adminLink.style.display = isAdmin ? 'block' : 'none';
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const isAuthenticated = currentUser && currentUser.authenticated;
+        
+        // Elementos de la interfaz de usuario
+        const userInfoElement = document.getElementById('userInfo');
+        const authButtonsElement = document.getElementById('authButtons');
+        const usernameDisplayElement = document.getElementById('usernameDisplay');
+        
+        if (isAuthenticated) {
+            // Usuario autenticado: mostrar información del usuario y ocultar botones de autenticación
+            if (userInfoElement) {
+                userInfoElement.style.display = 'flex';
+                if (usernameDisplayElement) {
+                    usernameDisplayElement.textContent = currentUser.username || currentUser.email || 'Usuario';
                 }
             }
-        } else {
-            // Usuario no autenticado
-            if (authButtons) authButtons.style.display = 'flex';
-            if (userInfo) userInfo.style.display = 'none';
             
-            // Limpiar localStorage
-            localStorage.removeItem('currentUser');
+            if (authButtonsElement) {
+                authButtonsElement.style.display = 'none';
+            }
+        } else {
+            // Usuario no autenticado: ocultar información del usuario y mostrar botones de autenticación
+            if (userInfoElement) {
+                userInfoElement.style.display = 'none';
+            }
+            
+            // Si no hay div de authButtons, crearlo
+            if (!authButtonsElement) {
+                if (userInfoElement) {
+                    const authButtons = document.createElement('div');
+                    authButtons.id = 'authButtons';
+                    authButtons.className = 'auth-buttons';
+                    authButtons.innerHTML = `
+                        <a href="login.html" class="btn-login">Iniciar sesión</a>
+                        <a href="register.html" class="btn-register">Registrarse</a>
+                    `;
+                    userInfoElement.parentNode.appendChild(authButtons);
+                }
+            } else {
+                authButtonsElement.style.display = 'flex';
+            }
         }
     }
     
@@ -290,39 +305,34 @@ function checkAuth() {
     }
     
     // Función de logout
-   // Función de logout
-async function logout() {
-    try {
-        console.log('Cerrando sesión...');
-        
-        // Limpiar localStorage
-        localStorage.removeItem('currentUser');
-        
-        // Opcional: eliminar datos guardados
-        localStorage.removeItem('savedForums');
-        localStorage.removeItem('savedVenues');
-        
-        // Actualizar UI
-        if (authButtons) authButtons.style.display = 'flex';
-        if (userInfo) userInfo.style.display = 'none';
-        
-        // Mostrar notificación si existe la función
-        if (typeof showNotification === 'function') {
-            showNotification('Has cerrado sesión correctamente');
+    function logout() {
+        try {
+            // Modificar el estado de autenticación
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            currentUser.authenticated = false;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            console.log('Sesión cerrada correctamente');
+            
+            // Mostrar notificación si la función está disponible
+            if (typeof showNotification === 'function') {
+                showNotification('Sesión cerrada correctamente', 'success');
+            } else {
+                alert('Sesión cerrada correctamente');
+            }
+            
+            // Redirigir a la página principal usando una ruta relativa
+            setTimeout(() => {
+                // Determinar si estamos en una subcarpeta
+                const isInSubfolder = window.location.pathname.includes('/admin/');
+                // Usar la ruta adecuada dependiendo de si estamos en una subcarpeta
+                window.location.href = isInSubfolder ? '../index.html' : 'index.html';
+            }, 1000);
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
         }
-        
-        // Redireccionar a la página de login
-        window.location.href = '/login.html';
-    } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-        
-        // En caso de error, limpiar localStorage de todas formas
-        localStorage.removeItem('currentUser');
-        
-        // Redireccionar a la página de login
-        window.location.href = '/login.html';
     }
-}
     
     // Función para verificar autenticación antes de guardar
     function requireAuth(redirectPath = null) {

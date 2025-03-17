@@ -32,7 +32,7 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
-// Función para guardar/eliminar foros - usando localStorage como alternativa
+// Función para guardar/eliminar foros - usando la base de datos
 async function saveForum(forumId, button) {
     console.log('saveForum llamado con ID:', forumId);
     
@@ -44,8 +44,11 @@ async function saveForum(forumId, button) {
         if (!currentUser || !currentUser.authenticated) {
             console.log('Usuario no autenticado, redirigiendo a login');
             
-            // Redireccionar a la página de login
-            window.location.href = '/login.html';
+            // Guardar el ID del foro que se estaba intentando guardar
+            localStorage.setItem('pendingForumSave', forumId);
+            
+            // Redireccionar a la página de login con parámetro de redirección
+            window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}&action=saveForum`;
             return;
         }
         
@@ -58,50 +61,73 @@ async function saveForum(forumId, button) {
         const isSaved = button.classList.contains('saved');
         console.log('Estado actual del foro:', isSaved ? 'guardado' : 'no guardado');
         
-        // Obtener foros guardados del localStorage
-        let savedForumsLocal = JSON.parse(localStorage.getItem('savedForums') || '[]');
-        
         if (isSaved) {
-            console.log('Eliminando foro guardado del localStorage...');
-            // Eliminar el foro de los guardados
-            savedForumsLocal = savedForumsLocal.filter(id => id !== parseInt(forumId) && id !== forumId);
-            localStorage.setItem('savedForums', JSON.stringify(savedForumsLocal));
+            console.log('Eliminando foro guardado...');
             
-            // Actualizar UI
-            button.classList.remove('saved');
-            button.innerHTML = '<i class="fas fa-star"></i> Guardar';
-            showNotification('Foro eliminado de tus guardados');
-        } else {
-            console.log('Guardando foro en localStorage...');
-            // Añadir el foro a los guardados
-            if (!savedForumsLocal.includes(parseInt(forumId)) && !savedForumsLocal.includes(forumId)) {
-                savedForumsLocal.push(forumId);
-                localStorage.setItem('savedForums', JSON.stringify(savedForumsLocal));
+            // Llamar al endpoint para eliminar el foro guardado
+            const response = await fetch(`/api/user/forums/${forumId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Actualizar UI
+                button.classList.remove('saved');
+                button.innerHTML = '<i class="fas fa-star"></i> Guardar';
+                showNotification('Foro eliminado de tus guardados');
+                
+                // Actualizar la lista local de foros guardados
+                savedForums = savedForums.filter(id => id !== parseInt(forumId) && id !== forumId);
+            } else {
+                throw new Error(data.message || 'Error al eliminar el foro guardado');
             }
+        } else {
+            console.log('Guardando foro...');
             
-            // Actualizar UI
-            button.classList.add('saved');
-            button.innerHTML = '<i class="fas fa-star"></i> Guardado';
-            showNotification('Foro guardado correctamente');
+            // Llamar al endpoint para guardar el foro
+            const response = await fetch('/api/user/forums', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ forumId }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Actualizar UI
+                button.classList.add('saved');
+                button.innerHTML = '<i class="fas fa-star"></i> Guardado';
+                showNotification('Foro guardado correctamente');
+                
+                // Actualizar la lista local de foros guardados
+                if (!savedForums.includes(parseInt(forumId)) && !savedForums.includes(forumId)) {
+                    savedForums.push(parseInt(forumId));
+                }
+            } else {
+                throw new Error(data.message || 'Error al guardar el foro');
+            }
         }
         
-        // Actualizar la variable global
-        savedForums = savedForumsLocal;
         console.log('Foros guardados actualizados:', savedForums);
-        
-        // Restaurar el botón
-        button.disabled = false;
         
     } catch (error) {
         console.error('Error al guardar/eliminar foro:', error);
-        // Restaurar el botón en caso de error
-        if (button) {
+        button.innerHTML = originalButtonText;
+        button.disabled = false;
+        showNotification('Error al procesar tu solicitud: ' + error.message, 'error');
+    } finally {
+        // Restaurar el estado del botón después de un tiempo
+        setTimeout(() => {
             button.disabled = false;
-            button.innerHTML = button.classList.contains('saved') ? 
-                '<i class="fas fa-star"></i> Guardado' : 
-                '<i class="fas fa-star"></i> Guardar';
-        }
-        showNotification('Error al procesar tu solicitud', 'error');
+        }, 500);
     }
 }
 
@@ -111,17 +137,65 @@ function viewForum(forumId) {
     window.location.href = `/foro.html?id=${forumId}`;
 }
 
-// Función para cargar foros guardados desde localStorage
-function loadSavedForumsFromLocalStorage() {
+// Función para cargar foros guardados desde la base de datos
+async function loadSavedForums() {
     try {
-        const savedForumsLocal = JSON.parse(localStorage.getItem('savedForums') || '[]');
-        savedForums = savedForumsLocal;
-        console.log('Foros guardados cargados desde localStorage:', savedForums);
-        return savedForums;
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        // Si no hay usuario autenticado, retornar array vacío
+        if (!currentUser || !currentUser.authenticated) {
+            console.log('No hay usuario autenticado para cargar foros guardados');
+            savedForums = [];
+            return [];
+        }
+        
+        // Llamar al endpoint para obtener los foros guardados del usuario
+        const response = await fetch('/api/user/forums', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.forums) {
+            // Extraer solo los IDs de los foros
+            const forumIds = data.forums.map(forum => forum.id);
+            console.log('Foros guardados cargados desde la base de datos:', forumIds);
+            
+            // Actualizar la variable global
+            savedForums = forumIds;
+            return forumIds;
+        } else {
+            console.warn('No se pudieron cargar los foros guardados:', data.message);
+            savedForums = [];
+            return [];
+        }
     } catch (error) {
-        console.error('Error al cargar foros guardados desde localStorage:', error);
+        console.error('Error al cargar foros guardados:', error);
+        savedForums = [];
         return [];
     }
+}
+
+// Función para actualizar la UI de los foros guardados
+function updateSavedForumsUI() {
+    document.querySelectorAll('.forum-card').forEach(card => {
+        const cardForumId = parseInt(card.dataset.forumId);
+        const saveBtn = card.querySelector('.btn-save');
+        
+        if (saveBtn) {
+            if (savedForums.includes(cardForumId)) {
+                saveBtn.classList.add('saved');
+                saveBtn.innerHTML = '<i class="fas fa-star"></i> Guardado';
+            } else {
+                saveBtn.classList.remove('saved');
+                saveBtn.innerHTML = '<i class="fas fa-star"></i> Guardar';
+            }
+        }
+    });
 }
 
 // Inicialización cuando el DOM esté listo
@@ -137,19 +211,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Cargar foros guardados si el usuario está autenticado
         if (isAuthenticated) {
-            // Cargar desde localStorage en lugar de la API
-            loadSavedForumsFromLocalStorage();
-            
-            // Actualizar la UI para mostrar los foros guardados
-            document.querySelectorAll('.forum-card').forEach(card => {
-                const cardForumId = parseInt(card.dataset.forumId);
-                const saveBtn = card.querySelector('.btn-save');
-                
-                if (saveBtn && savedForums.includes(cardForumId)) {
-                    saveBtn.classList.add('saved');
-                    saveBtn.innerHTML = '<i class="fas fa-star"></i> Guardado';
-                }
-            });
+            await loadSavedForums();
+            updateSavedForumsUI();
         }
     } catch (error) {
         console.error('Error al verificar autenticación:', error);
@@ -160,4 +223,5 @@ document.addEventListener('DOMContentLoaded', async function() {
 window.saveForum = saveForum;
 window.viewForum = viewForum;
 window.showNotification = showNotification;
-window.loadSavedForumsFromLocalStorage = loadSavedForumsFromLocalStorage;
+window.loadSavedForums = loadSavedForums;
+window.updateSavedForumsUI = updateSavedForumsUI;

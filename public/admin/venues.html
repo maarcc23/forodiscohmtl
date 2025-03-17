@@ -153,7 +153,7 @@
         <a href="/index.html" class="navbar-brand">ForoDisco</a>
         <div class="user-info">
             <span>Admin: <span class="username" id="adminUsername"></span></span>
-            <a href="#" onclick="logout()" class="btn-logout">Cerrar sesión</a>
+            <a href="#" onclick="checkAuth()" class="btn-logout">Cerrar sesión</a>
         </div>
     </nav>
 
@@ -361,13 +361,12 @@
             }
         });
 
-        function logout() {
-            // Eliminar información de sesión
-            localStorage.removeItem('currentUser');
-            
-            // Redirigir a la página de inicio
-            window.location.href = '/index.html';
-        }
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            checkAdminStatus();
+        });
     </script>
+    <script src="../js/auth.js"></script>
 </body>
 </html>

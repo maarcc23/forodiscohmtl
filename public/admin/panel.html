@@ -146,7 +146,7 @@
         <a href="/index.html" class="navbar-brand">ForoDisco</a>
         <div class="user-info">
             <span>Admin: <span class="username" id="adminUsername"></span></span>
-            <a href="#" onclick="logout()" class="btn-logout">Cerrar sesión</a>
+            <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
         </div>
     </nav>
 
@@ -307,13 +307,33 @@
             }
         });
 
-        function logout() {
-            // Eliminar información de sesión
-            localStorage.removeItem('currentUser');
-            
-            // Redirigir a la página de inicio
-            window.location.href = '/index.html';
+        // Función de logout directa
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación o alerta
+                alert('Sesión cerrada correctamente');
+                
+                // Redirigir a la página principal
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
         }
+
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
+        });
     </script>
 </body>
 </html>

@@ -88,28 +88,30 @@
             align-items: center;
         }
 
-        .btn-login, .btn-register {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+        .btn-login {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
             text-decoration: none;
             transition: all 0.3s ease;
             font-size: 0.9rem;
-        }
-
-        .btn-login {
-            background-color: white;
-            color: black;
-            border: 1px solid white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
         }
 
         .btn-login:hover {
-            background-color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn-register {
             color: white;
             border: 1px solid white;
             background: transparent;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
         }
 
         .btn-register:hover {
@@ -370,9 +372,13 @@
                 <a href="index.html">Inicio</a>
                 <a href="foros.html">Tus Foros</a>
                 <a href="tendencias.html">Nuevas Tendencias</a>
-                <a href="search.html">Buscar</a>
+                <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="auth-buttons">
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span id="usernameDisplay" class="username">Usuario</span></span>
+                <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
+            </div>
+            <div class="auth-buttons" id="authButtons">
                 <a href="login.html" class="btn-login">Iniciar sesión</a>
                 <a href="register.html" class="btn-register">Registrarse</a>
             </div>
@@ -410,6 +416,18 @@
         const loginForm = document.getElementById('loginForm');
         const errorMessage = document.getElementById('errorMessage');
 
+        // Crear un usuario de prueba si no existe
+        if (!localStorage.getItem('users')) {
+            const users = [{
+                id: 1,
+                username: 'admin',
+                email: 'admin@forodisco.com',
+                password: 'admin123',
+                role: 'admin'
+            }];
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -417,61 +435,95 @@
             const password = document.getElementById('password').value;
             
             try {
-                // Primero intentamos iniciar sesión con localStorage
-                const adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                // Obtener parámetro de redirección de la URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirect = urlParams.get('redirect');
                 
-                // Verificar si es el administrador (el admin puede iniciar sesión con username o email)
-                if (adminUser && (adminUser.username === email || adminUser.email === email) && adminUser.password === password) {
+                // Crear un usuario de sesión directamente para pruebas
+                if (email === 'admin@forodisco.com' && password === 'admin123') {
                     // Guardar información de sesión
                     localStorage.setItem('currentUser', JSON.stringify({
-                        id: adminUser.id,
-                        username: adminUser.username,
+                        id: 1,
+                        username: 'admin',
+                        email: email,
                         role: 'admin',
                         authenticated: true
                     }));
                     
-                    // Redirigir al panel de administración
-                    window.location.href = 'admin/panel.html';
+                    console.log('Inicio de sesión exitoso. Redirigiendo a:', redirect || 'index.html');
+                    
+                    // Verificar si hay un foro pendiente por guardar
+                    const pendingForumSave = localStorage.getItem('pendingForumSave');
+                    const action = urlParams.get('action');
+                    
+                    if (pendingForumSave && action === 'saveForum') {
+                        console.log('Hay un foro pendiente por guardar:', pendingForumSave);
+                        
+                        // Guardar el foro en la lista de foros guardados
+                        const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                        if (!savedForums.includes(pendingForumSave)) {
+                            savedForums.push(pendingForumSave);
+                            localStorage.setItem('savedForums', JSON.stringify(savedForums));
+                            console.log('Foro guardado exitosamente:', pendingForumSave);
+                        }
+                        
+                        // Limpiar el foro pendiente
+                        localStorage.removeItem('pendingForumSave');
+                    }
+                    
+                    // Redirigir a la página de redireccionar o a la página principal
+                    setTimeout(() => {
+                        window.location.href = redirect || 'index.html';
+                    }, 500);
                     return;
                 }
                 
-                // Verificar si es un usuario normal
+                // Verificar usuarios en localStorage
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
                 const user = users.find(u => u.email === email && u.password === password);
+                
                 if (user) {
                     // Guardar información de sesión
                     localStorage.setItem('currentUser', JSON.stringify({
                         id: user.id,
                         username: user.username,
+                        email: user.email,
                         role: user.role || 'user',
                         authenticated: true
                     }));
                     
-                    // Redirigir a la página principal
-                    window.location.href = 'index.html';
+                    console.log('Inicio de sesión exitoso. Redirigiendo a:', redirect || 'index.html');
+                    
+                    // Verificar si hay un foro pendiente por guardar
+                    const pendingForumSave = localStorage.getItem('pendingForumSave');
+                    const action = urlParams.get('action');
+                    
+                    if (pendingForumSave && action === 'saveForum') {
+                        console.log('Hay un foro pendiente por guardar:', pendingForumSave);
+                        
+                        // Guardar el foro en la lista de foros guardados
+                        const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                        if (!savedForums.includes(pendingForumSave)) {
+                            savedForums.push(pendingForumSave);
+                            localStorage.setItem('savedForums', JSON.stringify(savedForums));
+                            console.log('Foro guardado exitosamente:', pendingForumSave);
+                        }
+                        
+                        // Limpiar el foro pendiente
+                        localStorage.removeItem('pendingForumSave');
+                    }
+                    
+                    // Redirigir a la página de redireccionar o a la página principal
+                    setTimeout(() => {
+                        window.location.href = redirect || 'index.html';
+                    }, 500);
                     return;
                 }
                 
-                // Si no se encontró en localStorage, intentar con la API
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password }),
-                    credentials: 'include'
-                });
-
-                const data = await response.json();
+                // Si no se encontró usuario, mostrar error
+                errorMessage.textContent = 'Credenciales incorrectas';
+                errorMessage.style.display = 'block';
                 
-                if (response.ok) {
-                    // Redirigir a la página principal
-                    window.location.href = 'index.html';
-                } else {
-                    // Mostrar error
-                    errorMessage.textContent = data.message || 'Credenciales incorrectas';
-                    errorMessage.style.display = 'block';
-                }
             } catch (error) {
                 console.error('Error:', error);
                 errorMessage.textContent = 'Error de conexión o credenciales incorrectas';
@@ -479,5 +531,30 @@
             }
         });
     </script>
+    <script>
+        // Función de logout directa
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación o alerta
+                alert('Sesión cerrada correctamente');
+                
+                // Recargar la página
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+    </script>
+    <script src="js/auth.js"></script>
 </body>
 </html>

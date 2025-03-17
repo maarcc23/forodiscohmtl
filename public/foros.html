@@ -245,13 +245,9 @@
                 <a href="tendencias.html">Nuevas Tendencias</a>
                 <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="auth-buttons" id="authButtons">
-                <a href="login.html" onclick="showModal('loginModal')" class="btn-login">Iniciar sesión</a>
-                <a href="register.html" onclick="showModal('registerModal')" class="btn-register">Registrarse</a>
-            </div>
-            <div class="user-info" id="userInfo" style="display: none;">
-                <span>Bienvenido, <span class="username" id="usernameDisplay"></span></span>
-                <a href="index.html" onclick="logout()" class="btn-logout">Cerrar sesión</a>
+            <div class="user-info" id="userInfo">
+                <span>Bienvenido, <span class="username" id="usernameDisplay">admin</span></span>
+                <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
             </div>
         </div>
     </nav>
@@ -271,8 +267,11 @@
            try {
                // Verificar autenticación desde localStorage
                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+               
+               // Si no hay usuario autenticado, redirigir a la página de login
                if (!currentUser || !currentUser.authenticated) {
-                   window.location.href = '/login.html?redirect=foros.html';
+                   console.log('Usuario no autenticado, redirigiendo a login');
+                   window.location.href = 'login.html?redirect=foros.html';
                    return;
                }
        
@@ -508,14 +507,31 @@
            window.location.href = `index.html?forum=${forumId}`;
        }
 
-       function logout() {
-           // Eliminar datos de autenticación desde localStorage
-           localStorage.removeItem('currentUser');
-           localStorage.removeItem('savedForums');
-           localStorage.removeItem('savedVenues');
-           
-           // Redireccionar a la página de login
-           window.location.href = '/login.html';
+       // Función de logout directa
+       function logoutUser() {
+           try {
+               // Modificar el estado de autenticación
+               const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+               currentUser.authenticated = false;
+               localStorage.setItem('currentUser', JSON.stringify(currentUser));
+               
+               console.log('Sesión cerrada correctamente');
+               
+               // Mostrar notificación si existe la función
+               if (typeof showNotification === 'function') {
+                   showNotification('Sesión cerrada correctamente', 'success');
+               } else {
+                   alert('Sesión cerrada correctamente');
+               }
+               
+               // Redirigir a la página principal
+               setTimeout(() => {
+                   window.location.href = 'index.html';
+               }, 1000);
+           } catch (error) {
+               console.error('Error al cerrar sesión:', error);
+               alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+           }
        }
 
         // Cargar los foros guardados cuando se carga la página
