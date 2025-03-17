@@ -143,6 +143,7 @@ app.post('/api/register', async (req, res) => {
             // Iniciar sesión automáticamente
             req.session.userId = result.insertId;
             req.session.username = username;
+            req.session.email = email;
 
             res.status(201).json({
                 success: true,
@@ -177,7 +178,7 @@ app.post('/api/login', async (req, res) => {
         try {
             // Buscar usuario por email
             const [users] = await connection.query(
-                'SELECT id, username, password_hash FROM users WHERE email = ?',
+                'SELECT id, username, password_hash, email FROM users WHERE email = ?',
                 [email]
             );
 
@@ -203,6 +204,7 @@ app.post('/api/login', async (req, res) => {
             // Establecer sesión
             req.session.userId = user.id;
             req.session.username = user.username;
+            req.session.email = user.email;
 
             res.json({
                 success: true,
@@ -592,6 +594,75 @@ app.get('/api/auth/current-user', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener usuario actual:', error);
         res.status(500).json({ success: false, message: 'Error al obtener usuario' });
+    }
+});
+
+// Ruta para actualizar el perfil del usuario
+app.put('/api/user/profile', async (req, res) => {
+    try {
+        const { username, userId, authToken, email } = req.body;
+
+        // Validar datos
+        if (!username) {
+            return res.status(400).json({ success: false, message: 'El nombre de usuario es requerido' });
+        }
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'El correo electrónico es requerido para identificar al usuario' });
+        }
+
+        // Verificar autenticación - ahora acepta tanto sesión como localStorage
+        let userEmail;
+        
+        if (req.session && req.session.email) {
+            // Autenticación basada en sesión (método original)
+            userEmail = req.session.email;
+        } else if (email && authToken) {
+            // Autenticación alternativa basada en localStorage
+            userEmail = email;
+        } else {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el nombre de usuario ya está en uso por otro usuario
+            const [existingUsers] = await connection.query(
+                'SELECT id FROM users WHERE username = ? AND email != ?',
+                [username, userEmail]
+            );
+
+            if (existingUsers.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nombre de usuario ya está en uso'
+                });
+            }
+
+            // Actualizar el perfil del usuario usando el correo electrónico como identificador
+            await connection.query(
+                'UPDATE users SET username = ? WHERE email = ?',
+                [username, userEmail]
+            );
+
+            // Actualizar la sesión si existe
+            if (req.session) {
+                req.session.username = username;
+            }
+
+            res.json({
+                success: true,
+                message: 'Perfil actualizado correctamente'
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al actualizar el perfil:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al actualizar el perfil'
+        });
     }
 });
 

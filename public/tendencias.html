@@ -68,13 +68,24 @@
             align-items: center;
         }
 
-        .btn-login, .btn-register, .btn-logout {
+        .btn-login, .btn-register, .btn-logout, .btn-profile {
             padding: 0.5rem 1rem;
             border-radius: 20px;
             text-decoration: none;
             transition: all 0.3s ease;
             font-size: 0.9rem;
         }
+
+        .btn-register, .btn-logout, .btn-profile {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-register:hover, .btn-logout:hover, .btn-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
 
         .btn-login {
             background-color: white;
@@ -341,8 +352,9 @@
                 <a href="tendencias.html">Nuevas Tendencias</a>
                 <a href="normas.html">Normas de Comunidad</a>
             </div>
-            <div class="user-info" id="userInfo">
+            <div class="user-info" id="userInfo" style="display: none;">
                 <span>Bienvenido, <span class="username" id="usernameDisplay">admin</span></span>
+                <a href="perfil.html" class="btn-profile">Mi Perfil</a>
                 <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
             </div>
         </div>
