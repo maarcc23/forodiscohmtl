@@ -212,6 +212,38 @@
             background-color: #e03e5c;
         }
 
+        /* Background blur styles */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0a0a0a;
+        }
+
+        .blur-1, .blur-2 {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(100px);
+        }
+
+        .blur-1 {
+            top: 20%;
+            left: 20%;
+            background-color: rgba(255, 75, 110, 0.3);
+        }
+
+        .blur-2 {
+            bottom: 20%;
+            right: 20%;
+            background-color: rgba(75, 110, 255, 0.3);
+        }
+
+
         /* Notification styles */
         .notification {
             position: fixed;
@@ -261,7 +293,10 @@
             </div>
         </div>
     </nav>
-
+    <div class="background">
+        <div class="blur-1"></div>
+        <div class="blur-2"></div>
+    </div>
     <div class="container">
         <h1>Mi Perfil</h1>
         

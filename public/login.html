@@ -368,20 +368,6 @@
     <nav class="navbar">
         <div class="nav-center">
             <a href="index.html" class="nav-brand">ForoDisco</a>
-            <div class="nav-links">
-                <a href="index.html">Inicio</a>
-                <a href="foros.html">Tus Foros</a>
-                <a href="tendencias.html">Nuevas Tendencias</a>
-                <a href="normas.html">Normas de Comunidad</a>
-            </div>
-            <div class="user-info" id="userInfo" style="display: none;">
-                <span>Bienvenido, <span id="usernameDisplay" class="username">Usuario</span></span>
-                <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
-            </div>
-            <div class="auth-buttons" id="authButtons">
-                <a href="login.html" class="btn-login">Iniciar sesión</a>
-                <a href="register.html" class="btn-register">Registrarse</a>
-            </div>
         </div>
     </nav>
 
@@ -435,52 +421,60 @@
             const password = document.getElementById('password').value;
             
             try {
-                // Obtener parámetro de redirección de la URL
+                // Obtener parámetros de URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const redirect = urlParams.get('redirect');
                 
-                // Crear un usuario de sesión directamente para pruebas
-                if (email === 'admin@forodisco.com' && password === 'admin123') {
-                    // Guardar información de sesión
-                    localStorage.setItem('currentUser', JSON.stringify({
-                        id: 1,
-                        username: 'admin',
-                        email: email,
-                        role: 'admin',
-                        authenticated: true
-                    }));
+                // Primero intentar con la API
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
                     
-                    console.log('Inicio de sesión exitoso. Redirigiendo a:', redirect || 'index.html');
-                    
-                    // Verificar si hay un foro pendiente por guardar
-                    const pendingForumSave = localStorage.getItem('pendingForumSave');
-                    const action = urlParams.get('action');
-                    
-                    if (pendingForumSave && action === 'saveForum') {
-                        console.log('Hay un foro pendiente por guardar:', pendingForumSave);
+                    if (response.ok) {
+                        const data = await response.json();
                         
-                        // Guardar el foro en la lista de foros guardados
-                        const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
-                        if (!savedForums.includes(pendingForumSave)) {
-                            savedForums.push(pendingForumSave);
-                            localStorage.setItem('savedForums', JSON.stringify(savedForums));
-                            console.log('Foro guardado exitosamente:', pendingForumSave);
-                        }
+                        // Guardar información de sesión en localStorage también
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user?.id || Date.now().toString(),
+                            username: data.user?.username || email.split('@')[0],
+                            email: email,
+                            role: data.user?.role || 'user',
+                            authenticated: true
+                        }));
                         
-                        // Limpiar el foro pendiente
-                        localStorage.removeItem('pendingForumSave');
+                        console.log('Inicio de sesión exitoso con API. Redirigiendo a:', redirect || 'index.html');
+                        
+                        // Verificar si hay un foro pendiente por guardar
+                        handlePendingForumSave(urlParams);
+                        
+                        // Redirigir a la página de redireccionar o a la página principal
+                        setTimeout(() => {
+                            window.location.href = redirect || 'index.html';
+                        }, 500);
+                        return;
+                    } else if (response.status === 404 || response.status === 500) {
+                        console.warn('API no disponible, usando localStorage como respaldo');
+                        // Continuar con la verificación en localStorage
+                    } else {
+                        // Otros errores de la API
+                        const data = await response.json();
+                        errorMessage.textContent = data.message || 'Credenciales incorrectas';
+                        errorMessage.style.display = 'block';
+                        return;
                     }
-                    
-                    // Redirigir a la página de redireccionar o a la página principal
-                    setTimeout(() => {
-                        window.location.href = redirect || 'index.html';
-                    }, 500);
-                    return;
+                } catch (apiError) {
+                    console.warn('Error de conexión con API, usando localStorage como respaldo', apiError);
+                    // Continuar con la verificación en localStorage
                 }
                 
-                // Verificar usuarios en localStorage
+                // Respaldo: Verificar usuarios en localStorage
                 const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const user = users.find(u => u.email === email && u.password === password);
+                const user = users.find(u => (u.email === email || u.username === email) && u.password === password);
                 
                 if (user) {
                     // Guardar información de sesión
@@ -492,26 +486,10 @@
                         authenticated: true
                     }));
                     
-                    console.log('Inicio de sesión exitoso. Redirigiendo a:', redirect || 'index.html');
+                    console.log('Inicio de sesión exitoso con localStorage. Redirigiendo a:', redirect || 'index.html');
                     
                     // Verificar si hay un foro pendiente por guardar
-                    const pendingForumSave = localStorage.getItem('pendingForumSave');
-                    const action = urlParams.get('action');
-                    
-                    if (pendingForumSave && action === 'saveForum') {
-                        console.log('Hay un foro pendiente por guardar:', pendingForumSave);
-                        
-                        // Guardar el foro en la lista de foros guardados
-                        const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
-                        if (!savedForums.includes(pendingForumSave)) {
-                            savedForums.push(pendingForumSave);
-                            localStorage.setItem('savedForums', JSON.stringify(savedForums));
-                            console.log('Foro guardado exitosamente:', pendingForumSave);
-                        }
-                        
-                        // Limpiar el foro pendiente
-                        localStorage.removeItem('pendingForumSave');
-                    }
+                    handlePendingForumSave(urlParams);
                     
                     // Redirigir a la página de redireccionar o a la página principal
                     setTimeout(() => {
@@ -525,9 +503,30 @@
                 errorMessage.style.display = 'block';
                 
             } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = 'Error de conexión o credenciales incorrectas';
+                console.error('Error general:', error);
+                errorMessage.textContent = 'Error de conexión. Por favor, intenta de nuevo.';
                 errorMessage.style.display = 'block';
+            }
+            
+            // Función para manejar foros pendientes por guardar
+            function handlePendingForumSave(params) {
+                const pendingForumSave = localStorage.getItem('pendingForumSave');
+                const action = params.get('action');
+                
+                if (pendingForumSave && action === 'saveForum') {
+                    console.log('Hay un foro pendiente por guardar:', pendingForumSave);
+                    
+                    // Guardar el foro en la lista de foros guardados
+                    const savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                    if (!savedForums.includes(pendingForumSave)) {
+                        savedForums.push(pendingForumSave);
+                        localStorage.setItem('savedForums', JSON.stringify(savedForums));
+                        console.log('Foro guardado exitosamente:', pendingForumSave);
+                    }
+                    
+                    // Limpiar el foro pendiente
+                    localStorage.removeItem('pendingForumSave');
+                }
             }
         });
     </script>

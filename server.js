@@ -81,6 +81,25 @@ async function initializeDatabase() {
             )
         `);
         
+        // Crear tabla de venues favoritas por usuario si no existe
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS user_venue_favorites (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                venue_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY user_venue_unique (user_id, venue_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        
+        // Eliminar los foros de ejemplo de la tabla venues
+        await connection.query(`
+            DELETE FROM venues 
+            WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
+        `);
+        console.log('Foros de ejemplo eliminados de la base de datos');
+        
         console.log('Base de datos inicializada correctamente');
     } catch (error) {
         console.error('Error al inicializar la base de datos:', error);
@@ -275,69 +294,47 @@ app.get('/api/venues', async (req, res) => {
                 console.log('Tabla venues creada correctamente');
             }
             
-            // Obtener todas las venues
+            // Obtener todas las venues sin filtrar
             const [venues] = await connection.query('SELECT * FROM venues ORDER BY name');
             
             // Si no hay venues, insertar datos de prueba
             if (venues.length === 0) {
-                console.log('No se encontraron venues, insertando datos de prueba...');
+                console.log('No hay venues, insertando datos de prueba...');
                 
-                // Datos de prueba
-                const venuesData = [
-                    {
-                        name: 'Shoko Barcelona',
-                        description: 'El lugar de encuentro nocturno más exclusivo de Barcelona',
-                        location: 'Passeig Marítim 15, Barcelona',
-                        members: 0
-                    },
-                    {
-                        name: 'Opium Barcelona',
-                        description: 'La mejor experiencia nocturna frente al mar Mediterráneo',
-                        location: 'Passeig Marítim 34, Barcelona',
-                        members: 0
-                    },
-                    {
-                        name: 'Pacha Barcelona',
-                        description: 'El club más icónico de Barcelona con la mejor música house',
-                        location: 'Passeig Marítim 38, Barcelona',
-                        members: 0
-                    },
-                    {
-                        name: 'Razzmatazz',
-                        description: 'El templo de la música alternativa en Barcelona',
-                        location: 'Carrer dels Almogàvers 122, Barcelona',
-                        members: 0
-                    },
-                    {
-                        name: 'Sala Apolo',
-                        description: 'Uno de los clubs con más historia de Barcelona',
-                        location: 'Carrer Nou de la Rambla 113, Barcelona',
-                        members: 0
-                    }
-                ];
+                // Insertar venues de ejemplo
+                await connection.query(`
+                    INSERT INTO venues (name, description, location, members) VALUES
+                    ('Opium Barcelona', 'Discoteca y club nocturno con vistas al mar', 'Passeig Marítim, 34, Barcelona', 0),
+                    ('Pacha Barcelona', 'Sucursal de la famosa discoteca ibicenca', 'Passeig Marítim, 38, Barcelona', 0),
+                    ('Razzmatazz', 'Complejo con 5 salas y diferentes estilos musicales', 'Carrer dels Almogàvers, 122, Barcelona', 0),
+                    ('Sala Apolo', 'Histórica sala de conciertos y club nocturno', 'Carrer Nou de la Rambla, 113, Barcelona', 0),
+                    ('Shoko Barcelona', 'Restaurante y club con ambiente sofisticado', 'Passeig Marítim, 36, Barcelona', 0)
+                `);
                 
-                // Insertar venues de prueba
-                for (const venue of venuesData) {
-                    await connection.query(
-                        'INSERT INTO venues (name, description, location, members) VALUES (?, ?, ?, ?)',
-                        [venue.name, venue.description, venue.location, venue.members]
-                    );
-                }
+                console.log('Datos de prueba insertados correctamente');
                 
                 // Obtener las venues recién insertadas
                 const [newVenues] = await connection.query('SELECT * FROM venues ORDER BY name');
-                console.log(`Se insertaron ${newVenues.length} venues de prueba`);
-                res.json({ success: true, venues: newVenues });
+                
+                res.json({
+                    success: true,
+                    venues: newVenues
+                });
             } else {
-                console.log(`Se encontraron ${venues.length} venues existentes`);
-                res.json({ success: true, venues });
+                res.json({
+                    success: true,
+                    venues: venues
+                });
             }
         } finally {
             connection.release();
         }
     } catch (error) {
         console.error('Error al obtener venues:', error);
-        res.status(500).json({ success: false, message: 'Error al obtener venues', error: error.message });
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener las venues'
+        });
     }
 });
 
@@ -663,6 +660,284 @@ app.put('/api/user/profile', async (req, res) => {
             success: false,
             message: 'Error al actualizar el perfil'
         });
+    }
+});
+
+// Ruta para obtener los foros guardados por un usuario
+app.get('/api/user/saved-forums', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no autenticado'
+            });
+        }
+        
+        const userId = req.session.userId;
+        const connection = await pool.getConnection();
+        
+        try {
+            // Obtener los foros guardados por el usuario
+            const [savedForums] = await connection.query(
+                `SELECT f.*, v.name as venue_name, v.location as venue_location 
+                FROM forums f 
+                JOIN user_forums uf ON f.id = uf.forum_id 
+                LEFT JOIN venues v ON f.venue_id = v.id 
+                WHERE uf.user_id = ?`,
+                [userId]
+            );
+            
+            res.json({
+                success: true,
+                savedForums: savedForums
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener foros guardados:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener los foros guardados'
+        });
+    }
+});
+
+// Endpoint para guardar una venue para el usuario
+app.post('/api/user/save-venue', async (req, res) => {
+    try {
+        console.log('Recibida petición para guardar venue:', req.body);
+        
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const { venue_id } = req.body;
+        
+        if (!venue_id) {
+            return res.status(400).json({ success: false, message: 'ID de venue no proporcionado' });
+        }
+        
+        const connection = await pool.getConnection();
+        
+        try {
+            // Verificar si ya existe esta relación usuario-venue
+            const [existingVenues] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [userId, venue_id]
+            );
+            
+            if (existingVenues.length > 0) {
+                return res.json({ success: true, message: 'Venue ya guardada previamente' });
+            }
+            
+            // Insertar nueva relación usuario-venue
+            await connection.query(
+                'INSERT INTO user_venue_favorites (user_id, venue_id, created_at) VALUES (?, ?, NOW())',
+                [userId, venue_id]
+            );
+            
+            res.json({ success: true, message: 'Venue guardada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al guardar venue:', error);
+        res.status(500).json({ success: false, message: 'Error al guardar venue' });
+    }
+});
+
+// Endpoint para eliminar una venue guardada por el usuario
+app.delete('/api/user/delete-venue/:id', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const venueId = req.params.id;
+        
+        const connection = await pool.getConnection();
+        
+        try {
+            // Eliminar la relación usuario-venue
+            const [result] = await connection.query(
+                'DELETE FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [userId, venueId]
+            );
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrada o ya eliminada' });
+            }
+            
+            res.json({ success: true, message: 'Venue eliminada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar venue:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar venue' });
+    }
+});
+
+// Endpoint para obtener todas las venues guardadas por el usuario
+app.get('/api/user/venues', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const connection = await pool.getConnection();
+        
+        try {
+            console.log('Obteniendo venues guardadas para el usuario:', userId);
+            
+            // Primero, obtener solo los IDs de las venues guardadas
+            const [savedVenueIds] = await connection.query(
+                `SELECT venue_id, created_at FROM user_venue_favorites WHERE user_id = ?`,
+                [userId]
+            );
+            
+            console.log('IDs de venues guardadas encontradas:', savedVenueIds.length);
+            
+            if (savedVenueIds.length === 0) {
+                return res.json({
+                    success: true,
+                    venues: []
+                });
+            }
+            
+            // Extraer solo los IDs
+            const venueIds = savedVenueIds.map(item => item.venue_id);
+            
+            // Luego, obtener los detalles de esas venues con información adicional
+            const [venueDetails] = await connection.query(
+                `SELECT 
+                    v.id,
+                    v.name,
+                    v.description,
+                    v.location,
+                    v.follower_count
+                FROM venues v
+                WHERE v.id IN (?)`,
+                [venueIds]
+            );
+            
+            console.log('Detalles de venues encontrados:', venueDetails.length);
+            
+            // Combinar los datos
+            const venues = savedVenueIds.map(item => {
+                const details = venueDetails.find(v => v.id === item.venue_id) || {};
+                return {
+                    id: item.venue_id,
+                    created_at: item.created_at,
+                    name: details.name || 'Foro ' + item.venue_id,
+                    description: details.description || 'Sin descripción',
+                    image_url: details.image_url,
+                    location: details.location || 'Ubicación no disponible',
+                    address: details.address,
+                    followers: details.followers || 0,
+                    category: details.category || 'General',
+                    rating: details.rating || 0
+                };
+            });
+            
+            // Devolver los resultados
+            res.json({
+                success: true,
+                venues: venues
+            });
+        } catch (dbError) {
+            console.error('Error en la consulta de la base de datos:', dbError);
+            
+            // Si hay un error en la consulta, intentar obtener al menos los IDs
+            try {
+                const [basicVenues] = await connection.query(
+                    `SELECT venue_id as id, created_at FROM user_venue_favorites WHERE user_id = ?`,
+                    [userId]
+                );
+                
+                // Crear objetos simples con los IDs
+                const simpleVenues = basicVenues.map(item => ({
+                    id: item.id,
+                    created_at: item.created_at,
+                    name: 'Foro ' + item.id,
+                    description: 'Información no disponible',
+                    location: 'Ubicación no disponible',
+                    followers: 0
+                }));
+                
+                return res.json({
+                    success: true,
+                    venues: simpleVenues,
+                    note: 'Datos parciales debido a un error en la base de datos'
+                });
+            } catch (fallbackError) {
+                console.error('Error en consulta de respaldo:', fallbackError);
+                res.status(500).json({ 
+                    success: false, 
+                    message: 'Error al consultar la base de datos',
+                    error: dbError.message
+                });
+            }
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener venues guardadas:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error al obtener venues guardadas',
+            error: error.message
+        });
+    }
+});
+
+// Endpoint para eliminar un foro guardado de la tabla user_venue_favorites
+app.delete('/api/user/venues/:venueId', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const venueId = req.params.venueId;
+        
+        console.log(`Eliminando venue ${venueId} de favoritos para el usuario ${userId}`);
+        
+        const connection = await pool.getConnection();
+        
+        try {
+            // Eliminar la relación en la tabla user_venue_favorites
+            const [result] = await connection.query(
+                'DELETE FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [userId, venueId]
+            );
+            
+            connection.release();
+            
+            if (result.affectedRows > 0) {
+                return res.json({
+                    success: true,
+                    message: 'Venue eliminada de favoritos correctamente'
+                });
+            } else {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No se encontró la venue en favoritos'
+                });
+            }
+        } catch (error) {
+            connection.release();
+            console.error('Error al eliminar venue de favoritos:', error);
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar venue de favoritos' });
     }
 });
 

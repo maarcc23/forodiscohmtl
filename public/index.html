@@ -603,36 +603,33 @@
 
         .forum-grid {
             display: flex;
-            justify-content: flex-start;
-            flex-wrap: nowrap;
-            gap: 1rem;
-            padding-bottom: 1rem;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-            padding: 1rem 0;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
             margin-top: 1rem;
+            width: 100%;
         }
 
-        /* Ocultar la barra de desplazamiento pero mantener la funcionalidad */
+        /* Eliminamos el scroll horizontal */
         .forum-grid::-webkit-scrollbar {
-            height: 0;
-            width: 0;
-            background: transparent;
+            display: none;
         }
 
         .forum-card {
             background-color: #1e1e1e;
             border-radius: 8px;
-            padding: 1rem;
+            padding: 1.5rem;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid #333;
             display: flex;
             flex-direction: column;
             height: 100%;
-            width: 200px;
-            min-width: 200px;
-            max-width: 200px;
+            width: 250px;
+            min-width: 250px;
+            max-width: 250px;
             flex: 0 0 auto;
+            margin-bottom: 1rem;
         }
 
         .forum-card:hover {
@@ -1009,6 +1006,21 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('Script de venues cargado');
             
+            // Seleccionar elementos del DOM usando getElementById
+            const venuesSection = document.getElementById('venues-section');
+            const venuesGrid = document.getElementById('venues-grid');
+            const venuesLoading = document.getElementById('venues-loading');
+            
+            // Seleccionar el botón de explorar foros
+            const exploreBtn = document.querySelector('.explore-forums-btn');
+            
+            console.log('Elementos del DOM:', {
+                venuesSection: venuesSection ? 'encontrado' : 'no encontrado',
+                venuesGrid: venuesGrid ? 'encontrado' : 'no encontrado',
+                venuesLoading: venuesLoading ? 'encontrado' : 'no encontrado',
+                exploreBtn: exploreBtn ? 'encontrado' : 'no encontrado'
+            });
+            
             // Verificar si el usuario está autenticado
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             let isAuthenticated = false;
@@ -1020,34 +1032,24 @@
                 console.log('Usuario autenticado desde localStorage:', currentUser.username);
                 
                 // Mostrar información del usuario y ocultar botones de autenticación
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('usernameDisplay').textContent = currentUser.username || currentUser.email || 'Usuario';
-                document.getElementById('authButtons').style.display = 'none';
+                const userInfo = document.getElementById('userInfo');
+                const usernameDisplay = document.getElementById('usernameDisplay');
+                const authButtons = document.getElementById('authButtons');
+                
+                if (userInfo) userInfo.style.display = 'flex';
+                if (usernameDisplay) usernameDisplay.textContent = currentUser.username || currentUser.email || 'Usuario';
+                if (authButtons) authButtons.style.display = 'none';
                 
                 // Cargar foros guardados si el usuario está autenticado
-                await loadSavedForumsForIndex();
-                
-                // Mostrar la sección de venues y cargar los foros guardados
-                if (venuesSection) {
-                    venuesSection.style.display = 'block';
-                    if (venuesLoading) {
-                        venuesLoading.style.display = 'block';
-                    }
-                    loadVenuesFromLocalStorage();
-                }
+                savedForums = await loadSavedForumsForIndex() || [];
+                console.log('Foros guardados cargados:', savedForums);
             } else {
                 // Mostrar botones de autenticación y ocultar información del usuario
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('authButtons').style.display = 'flex';
+                const userInfo = document.getElementById('userInfo');
+                const authButtons = document.getElementById('authButtons');
                 
-                // Mostrar todas las venues si el usuario no está autenticado
-                if (venuesSection) {
-                    venuesSection.style.display = 'block';
-                    if (venuesLoading) {
-                        venuesLoading.style.display = 'block';
-                    }
-                    loadVenuesFromLocalStorage();
-                }
+                if (userInfo) userInfo.style.display = 'none';
+                if (authButtons) authButtons.style.display = 'flex';
             }
             
             // Configurar event listener para el botón de explorar foros
@@ -1055,201 +1057,93 @@
                 exploreBtn.addEventListener('click', function() {
                     console.log('Botón explore-forums-btn clickeado');
                     
+                    // En lugar de redirigir, cargar y mostrar las discotecas
                     if (venuesSection) {
-                        // Mostrar la sección de discotecas populares
                         venuesSection.style.display = 'block';
-                        
-                        // Mostrar indicador de carga
                         if (venuesLoading) {
                             venuesLoading.style.display = 'block';
                         }
                         
-                        // Cargar venues desde localStorage
-                        loadVenuesFromLocalStorage();
-                    } else {
-                        console.error('Sección de discotecas populares no encontrada');
+                        // Cargar venues desde la base de datos
+                        loadVenuesFromDatabase();
                     }
                 });
             } else {
                 console.error('Botón explore-forums-btn no encontrado');
             }
             
-            function loadVenuesFromLocalStorage() {
+            // Inicialmente ocultar la sección de venues
+            if (venuesSection) {
+                venuesSection.style.display = 'none';
+            }
+            
+            // Función para cargar venues desde la base de datos
+            async function loadVenuesFromDatabase() {
                 try {
-                    // Verificar si el usuario esté autenticado
-                    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                    const isUserAuthenticated = currentUser && currentUser.authenticated;
+                    console.log('Cargando venues desde la base de datos...');
                     
-                    // Si el usuario esté autenticado, solo mostrar los foros guardados
-                    if (isUserAuthenticated) {
-                        console.log('Usuario autenticado, mostrando solo foros guardados');
-                        
-                        // Recargar los foros guardados desde la base de datos para asegurar que tenemos la lista actualizada
-                        if (typeof loadSavedForumsForIndex === 'function') {
-                            loadSavedForumsForIndex().then(updatedSavedForums => {
-                                console.log('Foros guardados actualizados:', updatedSavedForums);
-                                
-                                // Si no hay foros guardados, mostrar mensaje
-                                if (!updatedSavedForums || updatedSavedForums.length === 0) {
-                                    if (venuesGrid) {
-                                        venuesGrid.innerHTML = '<div class="no-forums"><p>No tienes foros guardados. Explora y guarda tus foros favoritos.</p></div>';
-                                    }
-                                    
-                                    // Ocultar indicador de carga
-                                    if (venuesLoading) {
-                                        venuesLoading.style.display = 'none';
-                                    }
-                                    return;
-                                }
-                                
-                                // Obtener venues desde localStorage para filtrar
-                                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
-                                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
-                                
-                                // Combinar venues y clubs
-                                let allVenues = [...venues, ...clubs];
-                                
-                                // Filtrar solo los foros guardados
-                                const savedVenues = allVenues.filter(venue => {
-                                    const venueId = venue.id || venue.venue_id;
-                                    return updatedSavedForums.some(f => {
-                                        if (typeof f === 'object') {
-                                            return f.id === venueId || f.forum_id === venueId;
-                                        } else {
-                                            return f === venueId || f === parseInt(venueId);
-                                        }
-                                    });
-                                });
-                                
-                                console.log('Foros guardados filtrados:', savedVenues);
-                                
-                                if (venuesGrid) {
-                                    if (savedVenues.length > 0) {
-                                        console.log(`Se encontraron ${savedVenues.length} foros guardados`);
-                                        
-                                        // Limpiar el contenido anterior
-                                        venuesGrid.innerHTML = '';
-                                        
-                                        // Crear tarjetas para cada venue guardada
-                                        savedVenues.forEach(venue => {
-                                            console.log('Renderizando foro guardado:', venue);
-                                            
-                                            const card = document.createElement('div');
-                                            card.className = 'forum-card';
-                                            card.dataset.forumId = venue.id;
-                                            card.innerHTML = `
-                                                <h3>${venue.name || venue.nombre || 'Sin nombre'}</h3>
-                                                <p>${venue.description || venue.descripcion || 'Sin descripción disponible'}</p>
-                                                <p class="location">${venue.location || venue.direccion || 'Ubicación no disponible'} - ${venue.members || venue.follower_count || 0} miembros</p>
-                                                <div class="forum-actions">
-                                                    <button onclick="saveForumInIndex('${venue.id}', this)" class="btn-save saved">
-                                                        <i class="fas fa-star"></i> Guardado
-                                                    </button>
-                                                    <button onclick="viewForum('${venue.id}')" class="btn-view">Ver Foro</button>
-                                                </div>
-                                            `;
-                                            
-                                            venuesGrid.appendChild(card);
-                                        });
-                                    } else {
-                                        venuesGrid.innerHTML = '<div class="no-forums"><p>No tienes foros guardados. Explora y guarda tus foros favoritos.</p></div>';
-                                    }
-                                    
-                                    // Ocultar indicador de carga
-                                    if (venuesLoading) {
-                                        venuesLoading.style.display = 'none';
-                                    }
-                                }
-                            });
-                        } else {
-                            console.error('Función loadSavedForumsForIndex no disponible');
-                            if (venuesGrid) {
-                                venuesGrid.innerHTML = '<div class="error"><p>Error al cargar foros guardados. Por favor, intenta recargar la página.</p></div>';
-                            }
-                            
-                            // Ocultar indicador de carga
-                            if (venuesLoading) {
-                                venuesLoading.style.display = 'none';
-                            }
-                        }
-                    } else {
-                        // Si el usuario no esté autenticado, mostrar todos los foros disponibles
-                        console.log('Usuario no autenticado, mostrando todos los foros');
-                        
-                        // Obtener venues desde localStorage
-                        const venues = JSON.parse(localStorage.getItem('venues') || '[]');
-                        const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
-                        
-                        // Combinar venues y clubs
-                        let allVenues = [...venues, ...clubs];
-                        
-                        // Añadir clubs que no estén ya en venues
-                        clubs.forEach(club => {
-                            // Verificar si el club ya existe en venues
-                            const exists = allVenues.some(v => 
-                                v.id === club.id || 
-                                (v.name && club.nombre && v.name.toLowerCase() === club.nombre.toLowerCase())
-                            );
-                            
-                            if (!exists) {
-                                // Convertir formato de club a venue
-                                allVenues.push({
-                                    id: club.id || Date.now().toString(),
-                                    name: club.nombre || club.name,
-                                    description: club.descripcion || club.description,
-                                    location: club.direccion || club.location,
-                                    contact_info: club.telefono || club.contact_info,
-                                    members: 0,
-                                    follower_count: club.follower_count || 0,
-                                    rating: club.rating || 0
-                                });
+                    if (!venuesGrid) {
+                        console.error('El elemento venuesGrid no existe');
+                        return;
+                    }
+                    
+                    // Mostrar indicador de carga
+                    if (venuesLoading) {
+                        venuesLoading.style.display = 'block';
+                    }
+                    
+                    // Intentar obtener venues desde la API
+                    try {
+                        const response = await fetch('/api/venues', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json'
                             }
                         });
                         
-                        console.log('Venues cargadas desde localStorage:', allVenues);
-                        
-                        if (venuesGrid) {
-                            if (allVenues.length > 0) {
-                                console.log(`Se encontraron ${allVenues.length} venues`);
+                        if (response.ok) {
+                            const contentType = response.headers.get("content-type");
+                            if (contentType && contentType.indexOf("application/json") !== -1) {
+                                const data = await response.json();
+                                console.log('Venues cargadas desde API:', data);
                                 
-                                // Limpiar el contenido anterior
-                                venuesGrid.innerHTML = '';
-                                
-                                // Crear tarjetas para cada venue en una sola fila horizontal
-                                allVenues.forEach(venue => {
-                                    console.log('Renderizando venue:', venue);
+                                if (data.venues && data.venues.length > 0) {
+                                    // Guardar en localStorage para acceso offline
+                                    localStorage.setItem('venues', JSON.stringify(data.venues));
                                     
-                                    const isSaved = savedForums.includes(venue.id) || 
-                                                  savedForums.some(f => {
-                                                      if (typeof f === 'object') {
-                                                          return f.venue_id === venue.id || f.id === venue.id;
-                                                      } else {
-                                                          return f === venue.id || f === parseInt(venue.id);
-                                                      }
-                                                  });
-                                    
-                                    const card = document.createElement('div');
-                                    card.className = 'forum-card';
-                                    card.dataset.forumId = venue.id;
-                                    
-                                    // Crear el HTML de la tarjeta exactamente como en la imagen
-                                    card.innerHTML = `
-                                        <h3>${venue.name || venue.nombre || 'Sin nombre'}</h3>
-                                        <p>${venue.description || venue.descripcion || 'Sin descripción disponible'}</p>
-                                        <p class="location">${venue.location || venue.direccion || 'Ubicación no disponible'} - ${venue.members || venue.follower_count || 0} miembros</p>
-                                        <div class="forum-actions">
-                                            <button onclick="saveForumInIndex('${venue.id}', this)" class="btn-save ${isSaved ? 'saved' : ''}">
-                                                <i class="fas fa-star"></i> ${isSaved ? 'Guardado' : 'Guardar'}
-                                            </button>
-                                            <button onclick="viewForum('${venue.id}')" class="btn-view">Ver Foro</button>
+                                    // Renderizar venues
+                                    renderVenues(data.venues);
+                                } else {
+                                    // Mensaje cuando no hay discotecas disponibles
+                                    venuesGrid.innerHTML = `
+                                        <div class="no-forums">
+                                            <p>TODAVÍA NO TIENES FOROS GUARDADOS</p>
+                                            <button onclick="window.location.href='/foros.html'" class="btn-primary">Ver Foros</button>
                                         </div>
                                     `;
-                                    
-                                    venuesGrid.appendChild(card);
-                                });
+                                }
                             } else {
-                                venuesGrid.innerHTML = '<div class="no-forums"><p>No hay foros disponibles.</p></div>';
+                                throw new Error('La API no devolvió JSON válido');
                             }
+                        } else {
+                            throw new Error('Error al obtener venues desde la API');
+                        }
+                    } catch (apiError) {
+                        console.warn('Error al cargar venues desde API, usando localStorage:', apiError);
+                        
+                        // Si la API falla, intentar cargar desde localStorage
+                        const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                        
+                        if (venues.length > 0) {
+                            renderVenues(venues);
+                        } else {
+                            // Mensaje cuando no hay discotecas disponibles en localStorage
+                            venuesGrid.innerHTML = `
+                                <div class="no-forums">
+                                    <p>TODAVÍA NO TIENES FOROS GUARDADOS</p>
+                                    <button onclick="window.location.href='/foros.html'" class="btn-primary">Ver Foros</button>
+                                </div>
+                            `;
                         }
                     }
                     
@@ -1260,30 +1154,79 @@
                 } catch (error) {
                     console.error('Error al cargar venues:', error);
                     
-                    // Ocultar indicador de carga
+                    if (venuesGrid) {
+                        // Mensaje de error general con botón para ver foros
+                        venuesGrid.innerHTML = `
+                            <div class="no-forums">
+                                <p>TODAVÍA NO TIENES FOROS GUARDADOS</p>
+                                <button onclick="window.location.href='/foros.html'" class="btn-primary">Ver Foros</button>
+                            </div>
+                        `;
+                    }
+                    
+                    // Ocultar el spinner de carga en caso de error
                     if (venuesLoading) {
                         venuesLoading.style.display = 'none';
                     }
-                    
-                    // Mostrar mensaje de error
-                    if (venuesGrid) {
-                        venuesGrid.innerHTML = '<div class="error-message"><p>Error al cargar los foros. Por favor, intenta recargar la página.</p></div>';
-                    }
                 }
             }
+            
+            // Función para renderizar las venues en el grid
+            function renderVenues(venues) {
+                if (!venuesGrid) return;
+                
+                // Limpiar el contenido anterior
+                venuesGrid.innerHTML = '';
+                
+                if (venues.length === 0) {
+                    venuesGrid.innerHTML = '<div class="no-forums"><p>No hay discotecas disponibles. Intenta más tarde.</p></div>';
+                    return;
+                }
+                
+                // Configurar el contenedor para mostrar las tarjetas en una fila horizontal
+                venuesGrid.style.display = 'flex';
+                venuesGrid.style.flexWrap = 'wrap';
+                venuesGrid.style.justifyContent = 'center';
+                venuesGrid.style.gap = '20px';
+                
+                // Calcular el ancho óptimo para las tarjetas basado en el número de venues
+                const cardWidth = Math.max(250, Math.min(300, Math.floor(window.innerWidth / venues.length) - 40));
+                
+                // Crear tarjetas para cada venue
+                venues.forEach(venue => {
+                    console.log('Renderizando venue:', venue);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'forum-card';
+                    card.dataset.forumId = venue.id;
+                    
+                    // Ajustar el ancho de la tarjeta
+                    card.style.width = `${cardWidth}px`;
+                    card.style.margin = '10px';
+                    
+                    // Crear el HTML de la tarjeta exactamente como en la imagen
+                    card.innerHTML = `
+                        <h3>${venue.name || 'Sin nombre'}</h3>
+                        <p>${venue.description || 'Sin descripción'}</p>
+                        <p class="location">${venue.location || 'Ubicación no disponible'}</p>
+                        <div class="forum-actions">
+                            <button onclick="saveForumInIndex('${venue.id}', this)" class="btn-save">
+                                Guardar
+                            </button>
+                            <button onclick="viewForum('${venue.id}')" class="btn-view">Ver Foro</button>
+                        </div>
+                    `;
+                    
+                    venuesGrid.appendChild(card);
+                });
+            }
         });
-        
-        // Funciones globales para los botones de los foros
+    </script>
+    
+    <!-- Funciones globales para los botones de los foros -->
+    <script>
         async function saveForumInIndex(forumId, button) {
             console.log('saveForumInIndex llamado con ID:', forumId);
-            
-            // Verificar autenticación
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-            if (!currentUser || !currentUser.authenticated) {
-                console.log('Usuario no autenticado, redirigiendo a login');
-                window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
-                return;
-            }
             
             // Mostrar indicador de carga en el botón
             const originalButtonText = button.innerHTML;
@@ -1291,12 +1234,30 @@
             button.disabled = true;
             
             try {
+                // Verificar autenticación con la API primero
+                const authResponse = await fetch('/api/check-auth', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const authData = await authResponse.json();
+                
+                if (!authData.authenticated) {
+                    // Si la API dice que no está autenticado, redirigir a login
+                    console.log('Usuario no autenticado según API, redirigiendo a login');
+                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+                
                 // Determinar si ya está guardado
                 const isSaved = button.classList.contains('saved');
                 
                 if (isSaved) {
-                    // Llamar al endpoint para eliminar el foro guardado
-                    const response = await fetch(`/api/user/forums/${forumId}`, {
+                    // Eliminar de la API
+                    const response = await fetch(`/api/user/delete-venue/${forumId}`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json'
@@ -1309,43 +1270,19 @@
                     if (data.success) {
                         // Actualizar UI
                         button.classList.remove('saved');
-                        button.innerHTML = '<i class="fas fa-star"></i> Guardar';
+                        button.innerHTML = 'Guardar';
                         showNotification('Foro eliminado de tus guardados');
-                        
-                        // Eliminar el foro de la vista actual si estamos en la página de foros guardados
-                        const currentPath = window.location.pathname;
-                        if (currentPath === '/' || currentPath === '/index.html') {
-                            // Si estamos en la página principal, eliminar la tarjeta del foro
-                            const forumCard = button.closest('.forum-card');
-                            if (forumCard) {
-                                forumCard.remove();
-                            }
-                            
-                            // Recargar los foros guardados
-                            await loadSavedForumsForIndex();
-                            
-                            // Verificar si hay foros guardados restantes
-                            const remainingCards = document.querySelectorAll('.forum-card');
-                            if (remainingCards.length === 0) {
-                                if (venuesGrid) {
-                                    venuesGrid.innerHTML = '<div class="no-forums"><p>No tienes foros guardados. Explora y guarda tus foros favoritos.</p></div>';
-                                }
-                            }
-                        } else {
-                            // Si estamos en otra página, simplemente actualizar el botón
-                            await loadSavedForumsForIndex();
-                        }
                     } else {
                         throw new Error(data.message || 'Error al eliminar el foro guardado');
                     }
                 } else {
-                    // Llamar al endpoint para guardar el foro
-                    const response = await fetch('/api/user/forums', {
+                    // Guardar en la API
+                    const response = await fetch('/api/user/save-venue', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ forumId }),
+                        body: JSON.stringify({ venue_id: forumId }),
                         credentials: 'include'
                     });
                     
@@ -1354,11 +1291,8 @@
                     if (data.success) {
                         // Actualizar UI
                         button.classList.add('saved');
-                        button.innerHTML = '<i class="fas fa-star"></i> Guardado';
+                        button.innerHTML = 'Guardado';
                         showNotification('Foro guardado correctamente');
-                        
-                        // Recargar los foros guardados
-                        await loadSavedForumsForIndex();
                     } else {
                         throw new Error(data.message || 'Error al guardar el foro');
                     }
@@ -1434,83 +1368,14 @@
                     // Limpiar el contenido anterior
                     venuesGrid.innerHTML = '';
                     
-                    // Datos exactos como en la imagen
-                    const exampleVenues = [
-                        {
-                            id: 1,
-                            name: 'INPUT High Fidelity Dance Club',
-                            description: 'Club moderno con sistema de sonido de alta fidelidad',
-                            location: 'Barcelona',
-                            members: '0 miembros'
-                        },
-                        {
-                            id: 2,
-                            name: 'Opium Barcelona',
-                            description: 'La mejor experiencia nocturna frente al mar Mediterráneo',
-                            location: 'Passeig Marítim, 34, Barcelona',
-                            members: '0 miembros'
-                        },
-                        {
-                            id: 3,
-                            name: 'Pacha Barcelona',
-                            description: 'El club más icónico de Barcelona con la mejor música house',
-                            location: 'Passeig Marítim, 38, Barcelona - 0 miembros'
-                        },
-                        {
-                            id: 4,
-                            name: 'Razzmatazz',
-                            description: 'Complejo de música con 5 salas diferentes para todos los gustos',
-                            location: 'Barcelona - 0 miembros'
-                        },
-                        {
-                            id: 5,
-                            name: 'Sala Apolo',
-                            description: 'Histórica sala de conciertos y club nocturno con múltiples ambientes',
-                            location: 'Barcelona - 0 miembros'
-                        },
-                        {
-                            id: 6,
-                            name: 'Shoko Barcelona',
-                            description: 'El lugar de encuentros nocturnos más exclusivo de Barcelona',
-                            location: 'Passeig Marítim, 36, Barcelona - 0 miembros'
-                        },
-                        {
-                            id: 7,
-                            name: 'DownTown',
-                            description: 'Tu lo pasas genial!',
-                            location: 'Av. Dr. Marañón, 17, Les Corts, 08028 Barcelona - 0 miembros'
-                        }
-                    ];
-                    
-                    // Crear tarjetas para cada venue
-                    exampleVenues.forEach(venue => {
-                        const isSaved = savedForums.some(f => {
-                            if (typeof f === 'object') {
-                                return f.id == venue.id || f.forum_id == venue.id;
-                            } else {
-                                return f == venue.id || f == parseInt(venue.id);
-                            }
+                    if (savedForums && savedForums.length > 0) {
+                        savedForums.forEach(venue => {
+                            const venueCard = createVenueCard(venue);
+                            venuesGrid.appendChild(venueCard);
                         });
-                        
-                        const card = document.createElement('div');
-                        card.className = 'forum-card';
-                        card.dataset.forumId = venue.id;
-                        
-                        // Crear el HTML de la tarjeta exactamente como en la imagen
-                        card.innerHTML = `
-                            <h3>${venue.name}</h3>
-                            <p>${venue.description}</p>
-                            <p class="location">${venue.location}</p>
-                            <div class="forum-actions">
-                                <button onclick="saveForumInIndex('${venue.id}', this)" class="btn-save ${isSaved ? 'saved' : ''}">
-                                    ${isSaved ? 'Guardado' : 'Guardar'}
-                                </button>
-                                <button onclick="viewForum('${venue.id}')" class="btn-view">Ver Foro</button>
-                            </div>
-                        `;
-                        
-                        venuesGrid.appendChild(card);
-                    });
+                    } else {
+                        venuesGrid.innerHTML = '<div class="no-forums"><p>No tienes foros guardados. Explora y guarda tus foros favoritos.</p></div>';
+                    }
                 }
                 
                 // Ocultar el spinner de carga
@@ -1531,26 +1396,77 @@
             }
         }
         
-        // Función de logout directa
-        function logoutUser() {
+        // Función para cargar los foros guardados del usuario para la página principal
+        async function loadSavedForumsForIndex() {
+            console.log('Cargando foros guardados para el index...');
+            
             try {
-                // Modificar el estado de autenticación
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                currentUser.authenticated = false;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                // Verificar autenticación desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
                 
-                console.log('Sesión cerrada correctamente');
+                // Si no hay usuario autenticado, retornar array vacío
+                if (!currentUser || !currentUser.authenticated) {
+                    console.log('No hay usuario autenticado para cargar foros guardados');
+                    return [];
+                }
                 
-                // Mostrar notificación
-                showNotification('Sesión cerrada correctamente', 'success');
+                // Cargar desde localStorage
+                let savedForums = JSON.parse(localStorage.getItem('savedForums') || '[]');
+                console.log('Foros guardados cargados desde localStorage:', savedForums);
                 
-                // Recargar la página para actualizar la UI
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                // Obtener también venues guardadas desde localStorage
+                let savedVenues = JSON.parse(localStorage.getItem('savedVenues') || '[]');
+                console.log('Venues guardadas desde localStorage:', savedVenues);
+                
+                // Intentar cargar desde la API
+                try {
+                    const response = await fetch('/api/user/venues', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Venues guardadas cargadas desde API:', data);
+                        
+                        if (data.success && data.venues) {
+                            // Usar solo los datos de la API y limpiar localStorage
+                            savedVenues = data.venues.map(venue => venue.id);
+                            localStorage.setItem('savedVenues', JSON.stringify(savedVenues));
+                            console.log('Venues guardadas actualizadas desde API:', savedVenues);
+                        }
+                    }
+                } catch (apiError) {
+                    console.warn('Error al cargar venues guardadas desde API:', apiError);
+                    // Seguimos con los datos de localStorage
+                }
+                
+                // Combinar ambos arrays, asegurándose de no tener duplicados
+                let allSavedItems = [...savedForums];
+                
+                // Añadir IDs de venues guardadas
+                savedVenues.forEach(venue => {
+                    // Si venue es un objeto, extraer su ID
+                    const venueId = typeof venue === 'object' ? (venue.id || venue.venue_id || venue.forum_id) : venue;
+                    
+                    // Verificar que no exista ya en allSavedItems
+                    if (venueId && !allSavedItems.some(item => 
+                        item == venueId || 
+                        item == parseInt(venueId) ||
+                        (typeof item === 'object' && (item.id == venueId || item.forum_id == venueId))
+                    )) {
+                        allSavedItems.push(parseInt(venueId));
+                    }
+                });
+                
+                console.log('Todos los elementos guardados combinados:', allSavedItems);
+                return allSavedItems;
             } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+                console.error('Error general al cargar foros guardados:', error);
+                return [];
             }
         }
     </script>

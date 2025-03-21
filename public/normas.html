@@ -225,6 +225,8 @@
             color: #ff4b6e;
             font-weight: bold;
         }
+      
+    
     </style>
 </head>
 <body>
@@ -236,14 +238,18 @@
                 <a href="tendencias.html">Nuevas Tendencias</a>
                 <a href="normas.html">Normas de Comunidad</a>
             </div>
+
             <div class="user-info" id="userInfo" style="display: none;">
-                <span>Bienvenido, <span class="username" id="usernameDisplay">admin</span></span>
+                <span>Bienvenido, <span class="username" id="usernameDisplay">usuario</span></span>
                 <a href="perfil.html" class="btn-profile">Mi Perfil</a>
                 <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
             </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" class="btn-register">Registrarse</a>
+            </div>
         </div>
     </nav>
-
     <div class="background-animation">
         <div class="glow"></div>
         <div class="glow"></div>
@@ -327,33 +333,7 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Verificar el estado de autenticación al cargar la página
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Verificar autenticación usando localStorage
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            if (currentUser && currentUser.authenticated) {
-                document.getElementById('userInfo').style.display = 'flex';
-                document.getElementById('usernameDisplay').textContent = currentUser.username || currentUser.email || 'Usuario';
-            } else {
-                // Si no hay div de authButtons, crearlo
-                if (!document.getElementById('authButtons')) {
-                    const userInfo = document.getElementById('userInfo');
-                    const authButtons = document.createElement('div');
-                    authButtons.id = 'authButtons';
-                    authButtons.className = 'auth-buttons';
-                    authButtons.innerHTML = `
-                        <a href="login.html" class="btn-login">Iniciar sesión</a>
-                        <a href="register.html" class="btn-register">Registrarse</a>
-                    `;
-                    userInfo.parentNode.replaceChild(authButtons, userInfo);
-                } else {
-                    document.getElementById('authButtons').style.display = 'flex';
-                    document.getElementById('userInfo').style.display = 'none';
-                }
-            }
-        });
-    </script>
+    <script src="js/auth.js"></script>
     <script>
         // Función de logout directa
         function logoutUser() {
