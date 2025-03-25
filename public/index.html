@@ -785,6 +785,169 @@
         .btn-secondary:hover {
             background-color: rgba(255, 75, 110, 0.2);
         }
+
+
+
+        /* Estilos para el modal de eventos */
+        .events-container {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            gap: 20px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #ff4081 #1e1e1e;
+        }
+        
+        .events-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .events-container::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+        
+        .events-container::-webkit-scrollbar-thumb {
+            background-color: #ff4081;
+            border-radius: 4px;
+        }
+        
+        .event-card {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            min-width: 350px;
+            max-width: 350px;
+            height: 450px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .event-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 1px solid #333;
+        }
+        
+        .event-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .event-header h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: #ff4081;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .event-date {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .event-location {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+        
+        .event-description {
+            padding: 15px 20px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            flex-grow: 1;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+        }
+        
+        .event-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .event-price {
+            font-weight: bold;
+            color: #ff4081;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-event {
+            padding: 8px 15px;
+            border-radius: 80px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-details {
+            background-color: #ff4081;
+            color: white;
+        }
+        
+        .btn-details:hover {
+            background-color: #ff5a92;
+        }
+        
+        .btn-save {
+            background-color: transparent;
+            border: 1px solid #ff4081;
+            color: #ff4081;
+        }
+        
+        .btn-save:hover {
+            background-color: rgba(255, 64, 129, 0.1);
+        }
+        
+        /* Estilos para el spinner de carga */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 64, 129, 0.3);
+            border-radius: 50%;
+            border-top-color: #ff4081;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -916,13 +1079,13 @@
             <div class="section-card">
                 <h2>Eventos Destacados</h2>
                 <p>Descubre los eventos más esperados de la semana</p>
-                <a href="#" class="btn">Ver Eventos</a>
+                <a href="eventos.html" class="btn">Ver Eventos</a>
             </div>
 
             <div class="section-card">
                 <h2>Recomendaciones</h2>
                 <p>Las mejores recomendaciones de la comunidad</p>
-                <a href="#" class="btn">Ver Recomendaciones</a>
+                <a href="#" class="btn" >Ver Eventos</a>
             </div>
         </div>
 
@@ -1470,5 +1633,221 @@
             }
         }
     </script>
+    <!-- Modal de Eventos -->
+    <div id="eventsModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Eventos Destacados</h2>
+                <span class="close-modal" onclick="closeModal('eventsModal')">&times;</span>
+            </div>
+            <div class="modal-content">
+                <div id="events-loading" class="loading-container">
+                    <div class="spinner"></div>
+                    <p>Cargando eventos...</p>
+                </div>
+                <div id="events-container" class="events-container">
+                    <!-- Aquí se cargarán los eventos dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+// Función para abrir el modal de eventos
+function openEventsModal() {
+    const modal = document.getElementById('eventsModal');
+    if (!modal) {
+        console.error('Modal de eventos no encontrado');
+        return;
+    }
+    
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Evitar scroll en el fondo
+    
+    // Asegurarse de que el contenedor de eventos y el indicador de carga existen
+    const eventsContainer = document.getElementById('events-container');
+    const loadingElement = document.getElementById('events-loading');
+    
+    if (eventsContainer && loadingElement) {
+        // Mostrar indicador de carga
+        eventsContainer.innerHTML = '';
+        loadingElement.style.display = 'flex';
+        
+        // Cargar los eventos
+        loadEvents();
+    } else {
+        console.error('Contenedor de eventos o indicador de carga no encontrados');
+    }
+}
+
+// Función para cerrar el modal
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restaurar scroll
+}
+
+// Función para ver los detalles de un evento
+function viewEventDetails(eventId) {
+    console.log(`Ver detalles del evento ${eventId}`);
+    // Aquí implementaremos la vista detallada del evento
+}
+
+// Función para guardar un evento
+function saveEvent(eventId) {
+    console.log(`Guardar evento ${eventId}`);
+    // Aquí implementaremos la funcionalidad para guardar eventos
+}
+
+// Función para cargar los eventos desde la base de datos
+async function loadEvents() {
+    const eventsContainer = document.getElementById('events-container');
+    const loadingElement = document.getElementById('events-loading');
+    
+    try {
+        // Aquí se hará la petición al servidor para obtener los eventos
+        // Por ahora, usaremos datos de ejemplo
+        const events = [
+            {
+                id: 1,
+                name: "Fiesta de Inauguración",
+                date: "2025-04-15T21:00:00",
+                location: "Opium Barcelona",
+                description: "Gran fiesta de inauguración de la temporada de verano con los mejores DJs internacionales.",
+                image: "/img/event1.jpg", // Usar rutas relativas o absolutas
+                price: "25€"
+            },
+            {
+                id: 2,
+                name: "Noche de Techno",
+                date: "2025-04-20T23:00:00",
+                location: "Razzmatazz",
+                description: "Una noche dedicada a los amantes del techno con artistas de primer nivel y visuales impresionantes.",
+                image: "/img/event2.jpg",
+                price: "15€"
+            },
+            {
+                id: 3,
+                name: "Festival de Música Electrónica",
+                date: "2025-05-01T18:00:00",
+                location: "Parc del Fòrum",
+                description: "El festival más grande de música electrónica en Barcelona con más de 50 artistas en 5 escenarios.",
+                image: "/img/event3.jpg",
+                price: "45€"
+            },
+            {
+                id: 4,
+                name: "Noche Latina",
+                date: "2025-04-25T22:00:00",
+                location: "Shoko Barcelona",
+                description: "Disfruta de los mejores ritmos latinos en una noche llena de sabor y diversión.",
+                image: "/img/event4.jpg",
+                price: "20€"
+            },
+            {
+                id: 5,
+                name: "After Party",
+                date: "2025-04-18T04:00:00",
+                location: "Input High Fidelity Dance Club",
+                description: "La mejor after party de la ciudad para continuar la fiesta hasta el amanecer.",
+                image: "/img/event5.jpg",
+                price: "12€"
+            }
+        ];
+        
+        // Para evitar errores con imágenes que no existen, usaremos un color de fondo en su lugar
+        events.forEach(event => {
+            // Si la imagen comienza con http o https, asumimos que es una URL externa y la dejamos como está
+            if (!event.image.startsWith('http')) {
+                // Si es una ruta relativa, la reemplazamos por un color de fondo
+                event.image = `https://via.placeholder.com/350x180/121212/ff4081?text=${encodeURIComponent(event.name)}`;
+            }
+        });
+        
+        // Ocultar indicador de carga
+        loadingElement.style.display = 'none';
+        
+        // Mostrar los eventos
+        displayEvents(events);
+    } catch (error) {
+        console.error('Error al cargar eventos:', error);
+        loadingElement.style.display = 'none';
+        eventsContainer.innerHTML = '<p style="color: #b0b0b0; text-align: center; padding: 20px;">Error al cargar los eventos. Intenta de nuevo más tarde.</p>';
+    }
+}
+
+// Función para mostrar los eventos en el modal
+function displayEvents(events) {
+    const eventsContainer = document.getElementById('events-container');
+    
+    if (!events || events.length === 0) {
+        eventsContainer.innerHTML = '<p style="color: #b0b0b0; text-align: center; padding: 20px;">No hay eventos próximos.</p>';
+        return;
+    }
+    
+    // Limpiar el contenedor antes de añadir nuevas tarjetas
+    eventsContainer.innerHTML = '';
+    
+    // Crear las tarjetas de eventos
+    events.forEach(event => {
+        const eventCard = document.createElement('div');
+        eventCard.className = 'event-card';
+        
+        try {
+            // Formatear la fecha
+            const eventDate = new Date(event.date);
+            const formattedDate = eventDate.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            const formattedTime = eventDate.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Crear el HTML para la tarjeta
+            eventCard.innerHTML = `
+                <img src="${event.image}" alt="${event.name}" class="event-image" onerror="this.onerror=null; this.src='https://via.placeholder.com/350x180/121212/ff4081?text=Imagen+no+disponible';">
+                <div class="event-header">
+                    <h1>${event.name}</h1>
+                    <div class="event-date">
+                        <span class="event-icon">📅</span>
+                        <span>${formattedDate} - ${formattedTime}</span>
+                    </div>
+                    <div class="event-location">
+                        <span class="event-icon">📍</span>
+                        <span>${event.location}</span>
+                    </div>
+                </div>
+                <div class="event-description">
+                    <p>${event.description}</p>
+                </div>
+                <div class="event-footer">
+                    <div class="event-price">${event.price}</div>
+                    <div class="event-actions">
+                        <button class="btn-event btn-save" onclick="event.stopPropagation(); saveEvent(${event.id})">Guardar</button>
+                        <button class="btn-event btn-details" onclick="event.stopPropagation(); viewEventDetails(${event.id})">Detalles</button>
+                    </div>
+                </div>
+            `;
+            
+            // Hacer que toda la tarjeta sea clickeable
+            eventCard.addEventListener('click', function() {
+                viewEventDetails(event.id);
+            });
+            
+            eventsContainer.appendChild(eventCard);
+        } catch (error) {
+            console.error('Error al crear tarjeta de evento:', error);
+        }
+    });
+    
+    // Asegurarse de que el scroll horizontal funcione correctamente
+    setTimeout(() => {
+        eventsContainer.scrollLeft = 0;
+    }, 100);
+}
+</script>
 </body>
 </html>

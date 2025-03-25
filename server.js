@@ -941,6 +941,29 @@ app.delete('/api/user/venues/:venueId', async (req, res) => {
     }
 });
 
+// Endpoint para obtener eventos
+app.get('/api/events', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todos los eventos con el nombre del venue
+            const [events] = await connection.query(`
+                SELECT e.*, v.name as venue_name 
+                FROM events e 
+                LEFT JOIN venues v ON e.venue_id = v.id 
+                ORDER BY e.event_date ASC
+            `);
+            
+            res.json(events);
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener eventos:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener eventos' });
+    }
+});
+
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
