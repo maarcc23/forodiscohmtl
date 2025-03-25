@@ -964,6 +964,215 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// Endpoint para inicializar la tabla de recomendaciones
+app.get('/api/init-recommendations', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Crear tabla de recomendaciones si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS recommendations (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    parent_id INT NULL,
+                    title VARCHAR(255) NULL,
+                    description TEXT NOT NULL,
+                    interaction_count INT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (parent_id) REFERENCES recommendations(id) ON DELETE CASCADE
+                )
+            `);
+            
+            res.json({ success: true, message: 'Tabla de recomendaciones inicializada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al inicializar tabla de recomendaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al inicializar tabla de recomendaciones' });
+    }
+});
+
+// Endpoint para obtener todas las recomendaciones principales (no comentarios)
+app.get('/api/recommendations', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todas las recomendaciones principales con el nombre del usuario
+            const [recommendations] = await connection.query(`
+                SELECT r.*, u.username as author_name,
+                (SELECT COUNT(*) FROM recommendations WHERE parent_id = r.id) as comments_count
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.parent_id IS NULL
+                ORDER BY r.created_at DESC
+            `);
+            
+            res.json(recommendations);
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener recomendaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener recomendaciones' });
+    }
+});
+
+// Endpoint para obtener una recomendación específica con sus comentarios
+app.get('/api/recommendations/:id', async (req, res) => {
+    try {
+        const recommendationId = req.params.id;
+        const connection = await pool.getConnection();
+        try {
+            // Obtener la recomendación principal
+            const [recommendation] = await connection.query(`
+                SELECT r.*, u.username as author_name
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.id = ?
+            `, [recommendationId]);
+            
+            if (recommendation.length === 0) {
+                return res.status(404).json({ success: false, message: 'Recomendación no encontrada' });
+            }
+            
+            // Obtener los comentarios de la recomendación
+            const [comments] = await connection.query(`
+                SELECT r.*, u.username as author_name
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.parent_id = ?
+                ORDER BY r.created_at ASC
+            `, [recommendationId]);
+            
+            res.json({
+                recommendation: recommendation[0],
+                comments: comments
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener recomendación:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener recomendación' });
+    }
+});
+
+// Endpoint para crear una nueva recomendación
+app.post('/api/recommendations', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const { title, description } = req.body;
+        
+        if (!title || !description) {
+            return res.status(400).json({ success: false, message: 'Título y descripción son requeridos' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Insertar la nueva recomendación
+            const [result] = await connection.query(`
+                INSERT INTO recommendations (user_id, title, description)
+                VALUES (?, ?, ?)
+            `, [req.session.userId, title, description]);
+            
+            res.status(201).json({ 
+                success: true, 
+                message: 'Recomendación creada correctamente',
+                recommendationId: result.insertId
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear recomendación:', error);
+        res.status(500).json({ success: false, message: 'Error al crear recomendación' });
+    }
+});
+
+// Endpoint para añadir un comentario a una recomendación
+app.post('/api/recommendations/:id/comments', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const recommendationId = req.params.id;
+        const { description } = req.body;
+        
+        if (!description) {
+            return res.status(400).json({ success: false, message: 'Descripción es requerida' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que la recomendación existe
+            const [recommendation] = await connection.query(`
+                SELECT id FROM recommendations WHERE id = ?
+            `, [recommendationId]);
+            
+            if (recommendation.length === 0) {
+                return res.status(404).json({ success: false, message: 'Recomendación no encontrada' });
+            }
+            
+            // Insertar el nuevo comentario
+            const [result] = await connection.query(`
+                INSERT INTO recommendations (user_id, parent_id, description)
+                VALUES (?, ?, ?)
+            `, [req.session.userId, recommendationId, description]);
+            
+            // Incrementar el contador de interacciones de la recomendación principal
+            await connection.query(`
+                UPDATE recommendations SET interaction_count = interaction_count + 1
+                WHERE id = ?
+            `, [recommendationId]);
+            
+            res.status(201).json({ 
+                success: true, 
+                message: 'Comentario añadido correctamente',
+                commentId: result.insertId
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al añadir comentario:', error);
+        res.status(500).json({ success: false, message: 'Error al añadir comentario' });
+    }
+});
+
+// Endpoint para dar "me gusta" a una recomendación
+app.post('/api/recommendations/:id/like', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const recommendationId = req.params.id;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Incrementar el contador de interacciones
+            await connection.query(`
+                UPDATE recommendations SET interaction_count = interaction_count + 1
+                WHERE id = ?
+            `, [recommendationId]);
+            
+            res.json({ success: true, message: 'Me gusta añadido correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al dar me gusta:', error);
+        res.status(500).json({ success: false, message: 'Error al dar me gusta' });
+    }
+});
+
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
