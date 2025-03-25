@@ -250,6 +250,7 @@
         .btn-view {
             background-color: #ff4081;
             color: #ffffff;
+            text-decoration: none;
         }
         
         .btn-remove {
@@ -524,7 +525,7 @@
                         </div>
                     </div>
                     <div class="forum-actions">
-                        <button class="btn-view" onclick="event.stopPropagation(); viewForum('${venue.id}')">Ver Foro</button>
+                        <a class="btn-view" href="foro.html?forum=${venue.id}">Ver Foro</a>
                         <button class="btn-remove" onclick="event.stopPropagation(); removeForum('${venue.id}', this, 'venue')">Eliminar</button>
                     </div>
                 `;
