@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foro Discoteca - ForoDisco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Estilos específicos para la página del foro */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        header {
+            background-color: #1e1e1e;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        header h1 {
+            margin: 0;
+            color: #ff4081;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .back-button:hover {
+            background-color: #ff4081;
+        }
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .forum-title {
+            font-size: 2.5rem;
+            color: #ff4081;
+            margin: 0;
+        }
+        
+        .forum-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 10px;
+            color: #aaa;
+        }
+        
+        .forum-meta span {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .forum-meta i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
+        
+        .forum-description {
+            font-size: 1.1rem;
+            color: #ddd;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            text-align: right;
+        }
+        
+        .forum-actions {
+            display: flex;
+            gap: 50px;
+            margin-bottom: 10px;
+            justify-content: flex-end;
+        }
+        
+        .action-button {
+            background-color: transparent;
+            border: 1px solid #ff4081;
+            color: #ff4081;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .action-button i {
+            font-size: 1.2rem;
+        }
+        
+        .post-form {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .post-form textarea {
+            width: 96%;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: #fff;
+            padding: 15px;
+            margin-bottom: 15px;
+            resize: none;
+            height: 100px;
+        }
+        
+        .post-form-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .post-submit {
+            background-color: #ff4081;
+            color: #111;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .post-submit:hover {
+            background-color: #ff2d56;
+            transform: translateY(-2px);
+        }
+        
+        .posts-container {
+            margin-top: 30px;
+        }
+        
+        .post {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .post-author {
+            font-weight: bold;
+            color: #ff4081;
+        }
+        
+        .post-date {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .post-content {
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+        
+        .post-action {
+            display: flex;
+            align-items: center;
+            color: #aaa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .post-action i {
+            margin-right: 5px;
+        }
+        
+        .post-action:hover {
+            color: #ff4081;
+        }
+        
+        .post-action.liked {
+            color: #ff4081;
+        }
+        
+        .reply-form {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+        
+        .reply-form textarea {
+            width: 96%;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            resize: none;
+            height: 80px;
+        }
+        
+        .reply-form-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .reply-submit {
+            background-color: #ff4081;
+            color: #111;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .reply-submit:hover {
+            background-color: #ff2d56;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.success {
+            background-color: #4CAF50;
+        }
+        
+        .notification.error {
+            background-color: #f44336;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Foro</h1>
+    </header>
+
+    <div class="container">
+        <a href="index.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Volver a la página principal
+        </a>
+        
+            <div class="forum-container">
+                <div class="forum-header">
+                    <div>
+                        <h1 id="forumTitle" class="forum-title">Cargando...</h1>
+                        <div class="forum-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> <span id="forumLocation">Cargando...</span></span>
+                            <span><i class="fas fa-users"></i> <span id="forumMembers">0</span> - miembros</span>
+                        </div>
+                    </div>
+                    <div class="forum-actions">
+                        <button id="followButton" class="action-button">
+                            <i class="far fa-heart"></i>
+                        </button>
+                       
+                    </div>
+                </div>
+                
+                <p id="forumDescription" class="forum-description">Cargando descripción del foro...</p>
+                
+                <div class="post-form">
+                    <textarea id="newPostContent" placeholder="Escribe tu comentario aquí..."></textarea>
+                    <div class="post-form-actions">
+                        <button id="submitPost" class="post-submit">Publicar</button>
+                    </div>
+                </div>
+                
+                <div id="postsContainer" class="posts-container">
+                    <!-- Los posts se cargarán dinámicamente aquí -->
+                    <div class="loading-spinner">Cargando comentarios...</div>
+                </div>
+            </div>
+        
+        <div id="notification" class="notification"></div>
+    
+        <script>
+            // Variables globales
+            let currentForumId = null;
+            let isFollowing = false;
+            let isSaved = false;
+            
+            // Función para formatear fechas
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            // Función para mostrar notificaciones
+            function showNotification(message, type) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Función para cargar los datos del foro
+            async function loadForumData() {
+                try {
+                    // Obtener el ID del foro de la URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    currentForumId = urlParams.get('forum') || urlParams.get('id');
+                    
+                    if (!currentForumId) {
+                        showNotification('ID del foro no especificado', 'error');
+                        return;
+                    }
+                    
+                    console.log('Cargando datos para el foro ID:', currentForumId);
+                    
+                    // Cargar datos del foro
+                    const response = await fetch(`/api/venues/${currentForumId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        showNotification('Error al cargar datos del foro', 'error');
+                        return;
+                    }
+                    
+                    const venue = data.venue;
+                    
+                    // Actualizar la UI con los datos del foro
+                    document.getElementById('forumTitle').textContent = venue.name;
+                    document.getElementById('forumLocation').textContent = venue.location || 'Ubicación no especificada';
+                    document.getElementById('forumDescription').textContent = venue.description || 'Sin descripción';
+                    document.getElementById('forumMembers').textContent = venue.follower_count || 0;
+                    
+                    // Verificar si el usuario sigue este foro
+                    checkFollowStatus();
+                    
+                    // Verificar si el usuario ha guardado este foro
+                    checkSaveStatus();
+                    
+                    // Cargar los comentarios del foro
+                    loadForumComments();
+                } catch (error) {
+                    console.error('Error al cargar datos del foro:', error);
+                    showNotification('Error al cargar datos del foro', 'error');
+                }
+            }
+            
+            // Función para verificar si el usuario sigue este foro
+            async function checkFollowStatus() {
+                try {
+                    const response = await fetch(`/api/venues/${currentForumId}/follow-status`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    isFollowing = data.isFollowing;
+                    
+                    // Actualizar el botón de seguir
+                    const followButton = document.getElementById('followButton');
+                    if (isFollowing) {
+                        followButton.innerHTML = '<i class="fas fa-heart"></i>';
+                        followButton.classList.add('active');
+                    } else {
+                        followButton.innerHTML = '<i class="far fa-heart"></i>r';
+                        followButton.classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('Error al verificar estado de seguimiento:', error);
+                }
+            }
+            
+            // Función para verificar si el usuario ha guardado este foro
+            async function checkSaveStatus() {
+                try {
+                    const response = await fetch(`/api/user/forums/status/${currentForumId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    isSaved = data.isSaved;
+                    
+                    // Actualizar el botón de guardar
+                    const saveButton = document.getElementById('saveButton');
+                    if (isSaved) {
+                        saveButton.innerHTML = '<i class="fas fa-bookmark"></i> Guardado';
+                        saveButton.classList.add('active');
+                    } else {
+                        saveButton.innerHTML = '<i class="far fa-bookmark"></i> Guardar';
+                        saveButton.classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('Error al verificar estado de guardado:', error);
+                }
+            }
+                    // Función para cargar los comentarios del foro
+                    async function loadForumComments() {
+                        try {
+                            const response = await fetch(`/api/venues/${currentForumId}/comments`, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include'
+                            });
+                            
+                            const data = await response.json();
+                            
+                            const postsContainer = document.getElementById('postsContainer');
+                            postsContainer.innerHTML = '';
+                            
+                            if (data.success && data.comments && data.comments.length > 0) {
+                                // Organizar comentarios y respuestas
+                                const mainComments = data.comments.filter(comment => !comment.parent_id);
+                                const replies = data.comments.filter(comment => comment.parent_id);
+                                
+                                // Mostrar comentarios principales
+                                mainComments.forEach(comment => {
+                                    const commentElement = createCommentElement(comment);
+                                    postsContainer.appendChild(commentElement);
+                                    
+                                    // Añadir respuestas a este comentario
+                                    const commentReplies = replies.filter(reply => reply.parent_id === comment.id);
+                                    commentReplies.forEach(reply => {
+                                        const replyElement = createCommentElement(reply, true);
+                                        postsContainer.appendChild(replyElement);
+                                    });
+                                });
+                            } else {
+                                postsContainer.innerHTML = '<p style="text-align: center; color: #888;">No hay comentarios en este foro todavía. ¡Sé el primero en comentar!</p>';
+                            }
+                        } catch (error) {
+                            console.error('Error al cargar comentarios:', error);
+                            showNotification('Error al cargar comentarios', 'error');
+                        }
+                    }
+                    
+                    // Función para crear un elemento de comentario
+                    function createCommentElement(comment, isReply = false) {
+                        const element = document.createElement('div');
+                        element.className = 'post';
+                        element.dataset.commentId = comment.id;
+                        
+                        if (isReply) {
+                            element.style.marginLeft = '30px';
+                            element.style.borderLeft = '3px solid #ff4b6e';
+                        }
+                        
+                        element.innerHTML = `
+                            <div class="post-header">
+                                <span class="post-author">${comment.username || 'Usuario'}</span>
+                                <span class="post-date">${formatDate(comment.created_at)}</span>
+                            </div>
+                            <div class="post-content">
+                                <p>${comment.content}</p>
+                            </div>
+                            <div class="post-actions">
+                                <div class="post-action reply-action">
+                                    <i class="fas fa-reply"></i>
+                                    <span>Responder</span>
+                                </div>
+                            </div>
+                            <div class="reply-form">
+                                <textarea placeholder="Escribe tu respuesta..."></textarea>
+                                <div class="reply-form-actions">
+                                    <button class="reply-submit">Responder</button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Añadir event listener para mostrar/ocultar formulario de respuesta
+                        const replyAction = element.querySelector('.reply-action');
+                        const replyForm = element.querySelector('.reply-form');
+                        
+                        replyAction.addEventListener('click', () => {
+                            replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
+                        });
+                        
+                        // Añadir event listener para enviar respuesta
+                        const replySubmit = element.querySelector('.reply-submit');
+                        const replyTextarea = element.querySelector('textarea');
+                        
+                        replySubmit.addEventListener('click', () => {
+                            const content = replyTextarea.value.trim();
+                            if (content) {
+                                sendReply(comment.id, content);
+                                replyForm.style.display = 'none';
+                                replyTextarea.value = '';
+                            }
+                        });
+                        
+                        return element;
+                    }
+                    
+                    // Función para enviar un comentario
+                    async function sendComment(content) {
+                        try {
+                            const response = await fetch('/api/venues/comments', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    venueId: currentForumId,
+                                    content: content
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                showNotification('Comentario publicado correctamente', 'success');
+                                
+                                // Añadir el nuevo comentario a la UI sin recargar
+                                const postsContainer = document.getElementById('postsContainer');
+                                
+                                // Si no hay comentarios, limpiar el mensaje
+                                if (postsContainer.querySelector('p')) {
+                                    postsContainer.innerHTML = '';
+                                }
+                                
+                                const commentElement = createCommentElement(data.comment);
+                                postsContainer.insertBefore(commentElement, postsContainer.firstChild);
+                            } else {
+                                showNotification('Error al publicar comentario: ' + data.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error al enviar comentario:', error);
+                            showNotification('Error al publicar comentario', 'error');
+                        }
+                    }
+                    
+                    // Función para enviar una respuesta
+                    async function sendReply(parentId, content) {
+                        try {
+                            const response = await fetch('/api/venues/comments/reply', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    venueId: currentForumId,
+                                    parentId: parentId,
+                                    content: content
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                showNotification('Respuesta publicada correctamente', 'success');
+                                
+                                // Añadir la nueva respuesta a la UI sin recargar
+                                const parentComment = document.querySelector(`.post[data-comment-id="${parentId}"]`);
+                                const replyElement = createCommentElement(data.comment, true);
+                                parentComment.parentNode.insertBefore(replyElement, parentComment.nextSibling);
+                            } else {
+                                showNotification('Error al publicar respuesta: ' + data.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error al enviar respuesta:', error);
+                            showNotification('Error al publicar respuesta', 'error');
+                        }
+                    }
+                    
+                    // Función para seguir/dejar de seguir un foro
+                    async function toggleFollow() {
+                        try {
+                            const method = isFollowing ? 'DELETE' : 'POST';
+                            
+                            const response = await fetch(`/api/venues/${currentForumId}/follow`, {
+                                method: method,
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                credentials: 'include'
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                isFollowing = !isFollowing;
+                                
+                                // Actualizar el botón
+                                const followButton = document.getElementById('followButton');
+                                if (isFollowing) {
+                                    followButton.innerHTML = '<i class="fas fa-heart"></i>';
+                                    followButton.classList.add('active');
+                                    showNotification('Ahora sigues este foro', 'success');
+                                } else {
+                                    followButton.innerHTML = '<i class="far fa-heart"></i>';
+                                    followButton.classList.remove('active');
+                                    showNotification('Has dejado de seguir este foro', 'success');
+                                }
+                                
+                                // Actualizar contador de seguidores
+                                document.getElementById('forumMembers').textContent = data.followerCount;
+                            } else {
+                                showNotification('Error: ' + data.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error al cambiar estado de seguimiento:', error);
+                            showNotification('Error al procesar la solicitud', 'error');
+                        }
+                    }
+                    
+                    // Función para guardar/eliminar un foro
+                    async function toggleSave() {
+                        try {
+                            let response;
+                            
+                            if (isSaved) {
+                                response = await fetch(`/api/user/forums/${currentForumId}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    credentials: 'include'
+                                });
+                            } else {
+                                response = await fetch('/api/user/forums', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                        forumId: currentForumId
+                                    })
+                                });
+                            }
+                            
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                isSaved = !isSaved;
+                                
+                                // Actualizar el botón
+                                const saveButton = document.getElementById('saveButton');
+                                if (isSaved) {
+                                    saveButton.innerHTML = '<i class="fas fa-bookmark"></i> Guardado';
+                                    saveButton.classList.add('active');
+                                    showNotification('Foro guardado correctamente', 'success');
+                                } else {
+                                    saveButton.innerHTML = '<i class="far fa-bookmark"></i> Guardar';
+                                    saveButton.classList.remove('active');
+                                    showNotification('Foro eliminado de guardados', 'success');
+                                }
+                            } else {
+                                showNotification('Error: ' + data.message, 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error al cambiar estado de guardado:', error);
+                            showNotification('Error al procesar la solicitud', 'error');
+                        }
+                    }
+                    
+                    // Event listeners
+                    document.addEventListener('DOMContentLoaded', () => {
+                        // Cargar datos del foro
+                        loadForumData();
+                        
+                        // Event listener para enviar comentario
+                        document.getElementById('submitPost').addEventListener('click', () => {
+                            const content = document.getElementById('newPostContent').value.trim();
+                            if (content) {
+                                sendComment(content);
+                                document.getElementById('newPostContent').value = '';
+                            }
+                        });
+                        
+                        // Event listener para seguir/dejar de seguir
+                        document.getElementById('followButton').addEventListener('click', toggleFollow);
+                        
+                        // Event listener para guardar/eliminar
+                        document.getElementById('saveButton').addEventListener('click', toggleSave);
+                        
+                        // Event listener para cerrar sesión
+                        document.getElementById('logout-btn').addEventListener('click', async () => {
+                            try {
+                                const response = await fetch('/api/logout', {
+                                    method: 'POST',
+                                    credentials: 'include'
+                                });
+                                
+                                const data = await response.json();
+                                
+                                if (data.success) {
+                                    window.location.href = 'login.html';
+                                }
+                            } catch (error) {
+                                console.error('Error al cerrar sesión:', error);
+                            }
+                        });
+                        
+                        // Cargar nombre de usuario
+                        fetch('/api/check-auth', {
+                            method: 'GET',
+                            credentials: 'include'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.authenticated) {
+                                document.getElementById('username').textContent = data.username;
+                            } else {
+                                window.location.href = 'login.html';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al verificar autenticación:', error);
+                        });
+                    });
+                </script>
+            </body>
+            </html>
