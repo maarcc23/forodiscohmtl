@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - ForoDisco</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .panel-title {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        .club-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            background-color: #ff4b6e;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff3459;
+        }
+
+        .clubs-list {
+            margin-top: 3rem;
+        }
+
+        .club-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .club-card h3 {
+            color: #333;
+            margin: 0 0 1rem 0;
+        }
+
+        .error-message {
+            color: #ff4b6e;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #28a745;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Admin: <span class="username" id="adminUsername"></span></span>
+            <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <h1 class="panel-title">Panel de Administración - Gestión de Discotecas</h1>
+        
+        <div class="club-form">
+            <h2>Registrar Nueva Discoteca</h2>
+            <form id="clubForm">
+                <div class="form-group">
+                    <label for="nombre">Nombre de la Discoteca</label>
+                    <input type="text" id="nombre" name="nombre" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="direccion">Dirección</label>
+                    <input type="text" id="direccion" name="direccion" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefono">Teléfono</label>
+                    <input type="tel" id="telefono" name="telefono" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="horario">Horario</label>
+                    <input type="text" id="horario" name="horario" placeholder="Ej: Jueves a Domingo 00:00 - 06:00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">Descripción</label>
+                    <textarea id="descripcion" name="descripcion" required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Registrar Discoteca</button>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+            </form>
+        </div>
+
+        <div class="clubs-list">
+            <h2>Discotecas Registradas</h2>
+            <div id="clubsList">
+                <!-- Aquí se mostrarán las discotecas -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si el usuario es admin al cargar la página
+        window.addEventListener('load', checkAdminStatus);
+
+        function checkAdminStatus() {
+            try {
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                
+                // Verificar si está autenticado y es admin
+                if (!currentUser || !currentUser.authenticated || currentUser.role !== 'admin') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Mostrar el nombre de usuario
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                
+                // Cargar las discotecas
+                loadClubs();
+            } catch (error) {
+                console.error('Error de autenticación:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        function loadClubs() {
+            try {
+                // Obtener discotecas desde localStorage
+                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                
+                const clubsList = document.getElementById('clubsList');
+                clubsList.innerHTML = '';
+                
+                if (clubs.length === 0) {
+                    clubsList.innerHTML = '<p>No hay discotecas registradas.</p>';
+                    return;
+                }
+
+                clubs.forEach(club => {
+                    const clubCard = document.createElement('div');
+                    clubCard.className = 'club-card';
+                    clubCard.innerHTML = `
+                        <h3>${club.nombre}</h3>
+                        <p><strong>Dirección:</strong> ${club.direccion || 'No especificada'}</p>
+                        <p><strong>Teléfono:</strong> ${club.telefono || 'No especificado'}</p>
+                        <p><strong>Horario:</strong> ${club.horario || 'No especificado'}</p>
+                        <p>${club.descripcion || 'Sin descripción'}</p>
+                    `;
+                    clubsList.appendChild(clubCard);
+                });
+            } catch (error) {
+                console.error('Error al cargar discotecas:', error);
+                document.getElementById('clubsList').innerHTML = '<p>Error al cargar las discotecas: ' + error.message + '</p>';
+            }
+        }
+
+        document.getElementById('clubForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                id: Date.now().toString(),
+                nombre: document.getElementById('nombre').value,
+                direccion: document.getElementById('direccion').value,
+                telefono: document.getElementById('telefono').value,
+                horario: document.getElementById('horario').value,
+                descripcion: document.getElementById('descripcion').value,
+                // Añadir estos campos para compatibilidad con venues
+                name: document.getElementById('nombre').value,
+                location: document.getElementById('direccion').value,
+                contact_info: document.getElementById('telefono').value,
+                description: document.getElementById('descripcion').value,
+                follower_count: 0,
+                rating: 0
+            };
+
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                // Obtener discotecas existentes
+                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                
+                // Añadir la nueva discoteca
+                clubs.push(formData);
+                
+                // Guardar en localStorage
+                localStorage.setItem('clubs', JSON.stringify(clubs));
+                
+                // También guardar en venues para que aparezca en el index
+                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                venues.push(formData);
+                localStorage.setItem('venues', JSON.stringify(venues));
+                
+                // Mostrar mensaje de éxito
+                successMessage.textContent = 'Discoteca registrada correctamente';
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // Limpiar formulario
+                document.getElementById('clubForm').reset();
+                
+                // Recargar la lista de discotecas
+                loadClubs();
+            } catch (error) {
+                console.error('Error al registrar discoteca:', error);
+                errorMessage.textContent = 'Error al registrar la discoteca: ' + error.message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+        });
+
+        // Función de logout directa
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación o alerta
+                alert('Sesión cerrada correctamente');
+                
+                // Redirigir a la página principal
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminStatus();
+        });
+    </script>
+</body>
+</html>

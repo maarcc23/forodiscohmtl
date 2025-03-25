@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - ForoDisco</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --primary-color: #ff4b6e;
+            --background-color: #ffffff;
+            --card-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+        }
+
+        /* Navbar styles */
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .nav-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .nav-links a:hover {
+            color: #ff4b6e;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-login, .btn-register, .btn-logout, .btn-profile {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-login {
+            background-color: white;
+            color: black;
+            border: 1px solid white;
+        }
+
+        .btn-login:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-register, .btn-logout, .btn-profile {
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+        }
+
+        .btn-register:hover, .btn-logout:hover, .btn-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        /* Container and title styles */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 5rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Profile styles */
+        .profile-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-right: 2rem;
+        }
+
+        .profile-title {
+            font-size: 1.8rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .profile-subtitle {
+            color: var(--text-secondary);
+            margin: 0.5rem 0 0;
+            font-size: 1.1rem;
+        }
+
+        .profile-form {
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-input:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-save:hover {
+            background-color: #e03e5c;
+        }
+
+        /* Background blur styles */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0a0a0a;
+        }
+
+        .blur-1, .blur-2 {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(100px);
+        }
+
+        .blur-1 {
+            top: 20%;
+            left: 20%;
+            background-color: rgba(255, 75, 110, 0.3);
+        }
+
+        .blur-2 {
+            bottom: 20%;
+            right: 20%;
+            background-color: rgba(75, 110, 255, 0.3);
+        }
+
+
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .notification.success {
+            background-color: #4CAF50;
+        }
+
+        .notification.error {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-center">
+            <a href="index.html" class="nav-brand">ForoDisco</a>
+            <div class="nav-links">
+                <a href="foros.html">Tus Foros</a>
+                <a href="tendencias.html">Nuevas Tendencias</a>
+                <a href="normas.html">Normas de Comunidad</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span>Bienvenido, <span class="username" id="usernameDisplay">usuario</span></span>
+                <a href="perfil.html" class="btn-profile">Mi Perfil</a>
+                <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
+            </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn-login">Iniciar sesión</a>
+                <a href="register.html" class="btn-register">Registrarse</a>
+            </div>
+        </div>
+    </nav>
+    <div class="background">
+        <div class="blur-1"></div>
+        <div class="blur-2"></div>
+    </div>
+    <div class="container">
+        <h1>Mi Perfil</h1>
+        
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">U</div>
+                <div>
+                    <h2 class="profile-title" id="profileTitle">Nombre de Usuario</h2>
+                    <p class="profile-subtitle">Miembro desde <span id="memberSince">2023</span></p>
+                </div>
+            </div>
+            
+            <div class="profile-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Nombre de Usuario</label>
+                    <input type="text" id="username" class="form-input" placeholder="Tu nombre de usuario">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">Correo Electrónico</label>
+                    <input type="email" id="email" class="form-input" placeholder="tu@email.com" disabled>
+                    <small>El correo electrónico no se puede modificar</small>
+                </div>
+                
+                <button id="saveProfileBtn" class="btn-save">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar datos del usuario
+            loadUserProfile();
+            
+            // Configurar evento para guardar cambios
+            document.getElementById('saveProfileBtn').addEventListener('click', saveUserProfile);
+            
+            // Verificar autenticación
+            checkAuthentication();
+        });
+        
+        // Función para verificar si el usuario está autenticado
+        function checkAuthentication() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                if (currentUser.authenticated) {
+                    // Usuario autenticado, mostrar información
+                    document.getElementById('userInfo').style.display = 'flex';
+                    document.getElementById('authButtons').style.display = 'none';
+                    document.getElementById('usernameDisplay').textContent = currentUser.username || 'usuario';
+                } else {
+                    // Usuario no autenticado, redirigir al login
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Error al verificar autenticación:', error);
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Función para cargar los datos del perfil
+        function loadUserProfile() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                if (currentUser.authenticated) {
+                    // Mostrar datos en el formulario
+                    document.getElementById('username').value = currentUser.username || '';
+                    document.getElementById('email').value = currentUser.email || '';
+                    
+                    // Actualizar avatar y título
+                    const firstLetter = (currentUser.username || 'U')[0].toUpperCase();
+                    document.getElementById('profileAvatar').textContent = firstLetter;
+                    document.getElementById('profileTitle').textContent = currentUser.username || 'Usuario';
+                    
+                    // Fecha de registro (simulada)
+                    const registerDate = new Date().getFullYear();
+                    document.getElementById('memberSince').textContent = registerDate;
+                }
+            } catch (error) {
+                console.error('Error al cargar perfil:', error);
+                showNotification('Error al cargar los datos del perfil', 'error');
+            }
+        }
+        
+        // Función para guardar los cambios del perfil
+        function saveUserProfile() {
+            try {
+                const newUsername = document.getElementById('username').value.trim();
+                
+                // Validar nombre de usuario
+                if (!newUsername) {
+                    showNotification('El nombre de usuario no puede estar vacío', 'error');
+                    return;
+                }
+                
+                // Obtener datos actuales
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                // Actualizar nombre de usuario
+                currentUser.username = newUsername;
+                
+                // Guardar en localStorage
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Actualizar UI
+                document.getElementById('usernameDisplay').textContent = newUsername;
+                document.getElementById('profileTitle').textContent = newUsername;
+                const firstLetter = newUsername[0].toUpperCase();
+                document.getElementById('profileAvatar').textContent = firstLetter;
+                
+                // Mostrar notificación de éxito
+                showNotification('Perfil actualizado correctamente', 'success');
+                
+                // Intentar actualizar en la API (cuando esté disponible)
+                updateProfileInAPI(currentUser);
+            } catch (error) {
+                console.error('Error al guardar perfil:', error);
+                showNotification('Error al guardar los cambios', 'error');
+            }
+        }
+        
+        // Función para actualizar el perfil en la API (cuando esté disponible)
+        async function updateProfileInAPI(userData) {
+            try {
+                const response = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: userData.username,
+                        userId: userData.id || userData.userId,
+                        authToken: userData.token || 'localStorage-auth',
+                        email: userData.email
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('Perfil actualizado en la API correctamente');
+                } else {
+                    console.warn('No se pudo actualizar el perfil en la API, pero se guardó localmente');
+                }
+            } catch (error) {
+                console.warn('Error al actualizar perfil en la API, pero se guardó localmente:', error);
+            }
+        }
+        
+        // Función para mostrar notificaciones
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + type + ' show';
+            
+            setTimeout(() => {
+                notification.className = 'notification ' + type;
+            }, 3000);
+        }
+        
+        // Función de logout
+        function logoutUser() {
+            try {
+                // Modificar el estado de autenticación
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                currentUser.authenticated = false;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                console.log('Sesión cerrada correctamente');
+                
+                // Mostrar notificación
+                showNotification('Sesión cerrada correctamente', 'success');
+                
+                // Redirigir a la página principal
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+    </script>
+</body>
+</html>
