@@ -94,10 +94,10 @@ async function initializeDatabase() {
         `);
         
         // Eliminar los foros de ejemplo de la tabla venues
-        await connection.query(`
+        /*await connection.query(`
             DELETE FROM venues 
             WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
-        `);
+        `);*/
         console.log('Foros de ejemplo eliminados de la base de datos');
         
         console.log('Base de datos inicializada correctamente');
@@ -122,13 +122,11 @@ async function updateDatabaseStructure() {
             await connection.query('ALTER TABLE venues ADD COLUMN follower_count INT DEFAULT 0');
             console.log('Columna follower_count agregada a la tabla venues');
         }
-        
-        // Eliminar la tabla comments para recrearla con la estructura correcta
-        await connection.query('DROP TABLE IF EXISTS comments');
+    
         
         // Crear la tabla comments con la estructura correcta
         await connection.query(`
-            CREATE TABLE comments (
+            CREATE TABLE IF NOT EXISTS comments (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 content TEXT NOT NULL,
                 user_id INT NOT NULL,
@@ -1656,6 +1654,28 @@ app.get('/api/recent-comments', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener comentarios recientes:', error);
         res.status(500).json({ success: false, message: 'Error al obtener comentarios recientes' });
+    }
+});
+
+// Endpoint para obtener los locales más seguidos
+app.get('/api/most-followed-venues', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Obtener los locales más seguidos ordenados por follower_count
+            const [venues] = await connection.query(`
+                SELECT * FROM venues 
+                ORDER BY follower_count DESC 
+                LIMIT 3
+            `);
+            
+            res.json(venues);
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener locales más seguidos:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener locales más seguidos' });
     }
 });
 
