@@ -108,8 +108,50 @@ async function initializeDatabase() {
     }
 }
 
+// Modificar la estructura de la tabla venues para agregar follower_count
+async function updateDatabaseStructure() {
+    const connection = await pool.getConnection();
+    try {
+        console.log('Actualizando estructura de la base de datos...');
+        
+        // Verificar si la columna follower_count existe en la tabla venues
+        const [columns] = await connection.query('SHOW COLUMNS FROM venues LIKE "follower_count"');
+        
+        // Si la columna no existe, agregarla
+        if (columns.length === 0) {
+            await connection.query('ALTER TABLE venues ADD COLUMN follower_count INT DEFAULT 0');
+            console.log('Columna follower_count agregada a la tabla venues');
+        }
+        
+        // Eliminar la tabla comments para recrearla con la estructura correcta
+        await connection.query('DROP TABLE IF EXISTS comments');
+        
+        // Crear la tabla comments con la estructura correcta
+        await connection.query(`
+            CREATE TABLE comments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                content TEXT NOT NULL,
+                user_id INT NOT NULL,
+                venue_id INT NOT NULL,
+                parent_id INT DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('Tabla comments recreada con la estructura correcta');
+        
+        console.log('Estructura de la base de datos actualizada correctamente');
+    } catch (error) {
+        console.error('Error al actualizar la estructura de la base de datos:', error);
+    } finally {
+        connection.release();
+    }
+}
+
 // Inicializar la base de datos al arrancar el servidor
-initializeDatabase();
+initializeDatabase().then(() => {
+    updateDatabaseStructure();
+});
 
 // Ruta de registro
 app.post('/api/register', async (req, res) => {
@@ -961,6 +1003,633 @@ app.get('/api/events', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener eventos:', error);
         res.status(500).json({ success: false, message: 'Error al obtener eventos' });
+    }
+});
+
+// Endpoint para inicializar la tabla de recomendaciones
+app.get('/api/init-recommendations', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Crear tabla de recomendaciones si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS recommendations (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    parent_id INT NULL,
+                    title VARCHAR(255) NULL,
+                    description TEXT NOT NULL,
+                    interaction_count INT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (parent_id) REFERENCES recommendations(id) ON DELETE CASCADE
+                )
+            `);
+            
+            res.json({ success: true, message: 'Tabla de recomendaciones inicializada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al inicializar tabla de recomendaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al inicializar tabla de recomendaciones' });
+    }
+});
+
+// Endpoint para obtener todas las recomendaciones principales (no comentarios)
+app.get('/api/recommendations', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todas las recomendaciones principales con el nombre del usuario
+            const [recommendations] = await connection.query(`
+                SELECT r.*, u.username as author_name,
+                (SELECT COUNT(*) FROM recommendations WHERE parent_id = r.id) as comments_count
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.parent_id IS NULL
+                ORDER BY r.created_at DESC
+            `);
+            
+            res.json(recommendations);
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener recomendaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener recomendaciones' });
+    }
+});
+
+// Endpoint para obtener una recomendación específica con sus comentarios
+app.get('/api/recommendations/:id', async (req, res) => {
+    try {
+        const recommendationId = req.params.id;
+        const connection = await pool.getConnection();
+        try {
+            // Obtener la recomendación principal
+            const [recommendation] = await connection.query(`
+                SELECT r.*, u.username as author_name
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.id = ?
+            `, [recommendationId]);
+            
+            if (recommendation.length === 0) {
+                return res.status(404).json({ success: false, message: 'Recomendación no encontrada' });
+            }
+            
+            // Obtener los comentarios de la recomendación
+            const [comments] = await connection.query(`
+                SELECT r.*, u.username as author_name
+                FROM recommendations r 
+                LEFT JOIN users u ON r.user_id = u.id 
+                WHERE r.parent_id = ?
+                ORDER BY r.created_at ASC
+            `, [recommendationId]);
+            
+            res.json({
+                recommendation: recommendation[0],
+                comments: comments
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener recomendación:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener recomendación' });
+    }
+});
+
+// Endpoint para crear una nueva recomendación
+app.post('/api/recommendations', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const { title, description } = req.body;
+        
+        if (!title || !description) {
+            return res.status(400).json({ success: false, message: 'Título y descripción son requeridos' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Insertar la nueva recomendación
+            const [result] = await connection.query(`
+                INSERT INTO recommendations (user_id, title, description)
+                VALUES (?, ?, ?)
+            `, [req.session.userId, title, description]);
+            
+            res.status(201).json({ 
+                success: true, 
+                message: 'Recomendación creada correctamente',
+                recommendationId: result.insertId
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear recomendación:', error);
+        res.status(500).json({ success: false, message: 'Error al crear recomendación' });
+    }
+});
+
+// Endpoint para añadir un comentario a una recomendación
+app.post('/api/recommendations/:id/comments', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const recommendationId = req.params.id;
+        const { description } = req.body;
+        
+        if (!description) {
+            return res.status(400).json({ success: false, message: 'Descripción es requerida' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que la recomendación existe
+            const [recommendation] = await connection.query(`
+                SELECT id FROM recommendations WHERE id = ?
+            `, [recommendationId]);
+            
+            if (recommendation.length === 0) {
+                return res.status(404).json({ success: false, message: 'Recomendación no encontrada' });
+            }
+            
+            // Insertar el nuevo comentario
+            const [result] = await connection.query(`
+                INSERT INTO recommendations (user_id, parent_id, description)
+                VALUES (?, ?, ?)
+            `, [req.session.userId, recommendationId, description]);
+            
+            // Incrementar el contador de interacciones de la recomendación principal
+            await connection.query(`
+                UPDATE recommendations SET interaction_count = interaction_count + 1
+                WHERE id = ?
+            `, [recommendationId]);
+            
+            res.status(201).json({ 
+                success: true, 
+                message: 'Comentario añadido correctamente',
+                commentId: result.insertId
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al añadir comentario:', error);
+        res.status(500).json({ success: false, message: 'Error al añadir comentario' });
+    }
+});
+
+// Endpoint para dar "me gusta" a una recomendación
+app.post('/api/recommendations/:id/like', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const recommendationId = req.params.id;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Incrementar el contador de interacciones
+            await connection.query(`
+                UPDATE recommendations SET interaction_count = interaction_count + 1
+                WHERE id = ?
+            `, [recommendationId]);
+            
+            res.json({ success: true, message: 'Me gusta añadido correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al dar me gusta:', error);
+        res.status(500).json({ success: false, message: 'Error al dar me gusta' });
+    }
+});
+
+// Endpoint para obtener comentarios de un venue
+app.get('/api/venues/:venueId/comments', async (req, res) => {
+    try {
+        const venueId = req.params.venueId;
+
+        if (!venueId) {
+            return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
+        }
+
+        console.log('Obteniendo comentarios para el venue ID:', venueId);
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si la tabla comments existe
+            const [tables] = await connection.query("SHOW TABLES LIKE 'comments'");
+            if (tables.length === 0) {
+                // Si la tabla no existe, devolver una lista vacía
+                console.log('La tabla comments no existe, devolviendo lista vacía');
+                return res.json({
+                    success: true,
+                    comments: []
+                });
+            }
+            
+            // Obtener todos los comentarios del venue ordenados por fecha
+            const [comments] = await connection.query(
+                `SELECT 
+                    c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
+                    IFNULL(u.username, 'Usuario') as username
+                FROM comments c
+                LEFT JOIN users u ON c.user_id = u.id
+                WHERE c.venue_id = ?
+                ORDER BY c.created_at DESC`,
+                [venueId]
+            );
+            
+            console.log(`Se encontraron ${comments.length} comentarios para el venue ID ${venueId}`);
+            
+            res.json({
+                success: true,
+                comments: comments
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener comentarios:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener los comentarios: ' + error.message
+        });
+    }
+});
+
+// Endpoint para crear un comentario
+app.post('/api/venues/comments', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const { venueId, content } = req.body;
+        
+        if (!venueId || !content) {
+            return res.status(400).json({ success: false, message: 'Faltan datos requeridos' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Insertar el comentario
+            const [result] = await connection.query(
+                'INSERT INTO comments (content, user_id, venue_id) VALUES (?, ?, ?)',
+                [content, req.session.userId, venueId]
+            );
+            
+            // Obtener el comentario recién creado con el nombre de usuario
+            const [comments] = await connection.query(
+                `SELECT 
+                    c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
+                    IFNULL(u.username, 'Usuario') as username
+                FROM comments c
+                LEFT JOIN users u ON c.user_id = u.id
+                WHERE c.id = ?`,
+                [result.insertId]
+            );
+            
+            res.json({
+                success: true,
+                message: 'Comentario creado correctamente',
+                comment: comments[0]
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear comentario:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al crear el comentario: ' + error.message
+        });
+    }
+});
+
+// Endpoint para responder a un comentario
+app.post('/api/venues/comments/reply', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const { venueId, parentId, content } = req.body;
+        
+        if (!venueId || !parentId || !content) {
+            return res.status(400).json({ success: false, message: 'Faltan datos requeridos' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el comentario padre existe
+            const [parentComment] = await connection.query(
+                'SELECT * FROM comments WHERE id = ? AND venue_id = ?',
+                [parentId, venueId]
+            );
+            
+            if (parentComment.length === 0) {
+                return res.status(404).json({ success: false, message: 'Comentario padre no encontrado' });
+            }
+            
+            // Insertar la respuesta
+            const [result] = await connection.query(
+                'INSERT INTO comments (content, user_id, venue_id, parent_id) VALUES (?, ?, ?, ?)',
+                [content, req.session.userId, venueId, parentId]
+            );
+            
+            // Obtener la respuesta recién creada con el nombre de usuario
+            const [comments] = await connection.query(
+                `SELECT 
+                    c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
+                    IFNULL(u.username, 'Usuario') as username
+                FROM comments c
+                LEFT JOIN users u ON c.user_id = u.id
+                WHERE c.id = ?`,
+                [result.insertId]
+            );
+            
+            res.json({
+                success: true,
+                message: 'Respuesta creada correctamente',
+                comment: comments[0]
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear respuesta:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al crear la respuesta: ' + error.message
+        });
+    }
+});
+
+// Endpoint para seguir/dejar de seguir un venue (incrementa/decrementa follower_count)
+app.post('/api/venues/:venueId/follow', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const venueId = req.params.venueId;
+        
+        if (!venueId) {
+            return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario ya sigue este venue
+            const [existingFollow] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [req.session.userId, venueId]
+            );
+            
+            if (existingFollow.length > 0) {
+                return res.status(400).json({ success: false, message: 'Ya sigues este venue' });
+            }
+            
+            // Iniciar transacción
+            await connection.beginTransaction();
+            
+            // Insertar en la tabla de favoritos
+            await connection.query(
+                'INSERT INTO user_venue_favorites (user_id, venue_id) VALUES (?, ?)',
+                [req.session.userId, venueId]
+            );
+            
+            // Incrementar el contador de seguidores
+            await connection.query(
+                'UPDATE venues SET follower_count = follower_count + 1 WHERE id = ?',
+                [venueId]
+            );
+            
+            // Obtener el nuevo contador de seguidores
+            const [venueData] = await connection.query(
+                'SELECT follower_count FROM venues WHERE id = ?',
+                [venueId]
+            );
+            
+            // Confirmar la transacción
+            await connection.commit();
+            
+            res.json({
+                success: true,
+                message: 'Ahora sigues este venue',
+                followerCount: venueData[0].follower_count
+            });
+        } catch (error) {
+            // Revertir la transacción en caso de error
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al seguir venue:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al seguir el venue: ' + error.message
+        });
+    }
+});
+
+// Endpoint para dejar de seguir un venue
+app.delete('/api/venues/:venueId/follow', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const venueId = req.params.venueId;
+        
+        if (!venueId) {
+            return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario sigue este venue
+            const [existingFollow] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [req.session.userId, venueId]
+            );
+            
+            if (existingFollow.length === 0) {
+                return res.status(400).json({ success: false, message: 'No sigues este venue' });
+            }
+            
+            // Iniciar transacción
+            await connection.beginTransaction();
+            
+            // Eliminar de la tabla de favoritos
+            await connection.query(
+                'DELETE FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [req.session.userId, venueId]
+            );
+            
+            // Decrementar el contador de seguidores (asegurando que no sea negativo)
+            await connection.query(
+                'UPDATE venues SET follower_count = GREATEST(0, follower_count - 1) WHERE id = ?',
+                [venueId]
+            );
+            
+            // Obtener el nuevo contador de seguidores
+            const [venueData] = await connection.query(
+                'SELECT follower_count FROM venues WHERE id = ?',
+                [venueId]
+            );
+            
+            // Confirmar la transacción
+            await connection.commit();
+            
+            res.json({
+                success: true,
+                message: 'Has dejado de seguir este venue',
+                followerCount: venueData[0].follower_count
+            });
+        } catch (error) {
+            // Revertir la transacción en caso de error
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al dejar de seguir venue:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al dejar de seguir el venue: ' + error.message
+        });
+    }
+});
+
+// Endpoint para verificar si el usuario sigue un venue
+app.get('/api/venues/:venueId/follow-status', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const venueId = req.params.venueId;
+        
+        if (!venueId) {
+            return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario sigue este venue
+            const [existingFollow] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [req.session.userId, venueId]
+            );
+            
+            res.json({
+                success: true,
+                isFollowing: existingFollow.length > 0
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al verificar estado de seguimiento:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al verificar estado de seguimiento: ' + error.message
+        });
+    }
+});
+
+// Endpoint para verificar si un foro está guardado
+app.get('/api/user/forums/status/:forumId', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const forumId = req.params.forumId;
+        
+        if (!forumId) {
+            return res.status(400).json({ success: false, message: 'ID de foro no especificado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario ha guardado este foro
+            const [existingForum] = await connection.query(
+                'SELECT * FROM user_forums WHERE user_id = ? AND forum_id = ?',
+                [req.session.userId, forumId]
+            );
+            
+            res.json({
+                success: true,
+                isSaved: existingForum.length > 0
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al verificar estado de guardado:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al verificar estado de guardado: ' + error.message
+        });
+    }
+});
+
+// Endpoint para obtener un venue específico
+app.get('/api/venues/:venueId', async (req, res) => {
+    try {
+        const venueId = req.params.venueId;
+
+        if (!venueId) {
+            return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            const [venues] = await connection.query(
+                'SELECT * FROM venues WHERE id = ?',
+                [venueId]
+            );
+            
+            if (venues.length === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrado' });
+            }
+            
+            res.json({
+                success: true,
+                venue: venues[0]
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener venue:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener el venue: ' + error.message
+        });
     }
 });
 
