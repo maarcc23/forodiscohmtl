@@ -1633,6 +1633,32 @@ app.get('/api/venues/:venueId', async (req, res) => {
     }
 });
 
+// Endpoint para obtener los comentarios más recientes (del último día)
+app.get('/api/recent-comments', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        try {
+            // Obtener comentarios de las últimas 24 horas
+            const [comments] = await connection.query(`
+                SELECT c.*, u.username, v.name as venue_name 
+                FROM comments c
+                JOIN users u ON c.user_id = u.id
+                JOIN venues v ON c.venue_id = v.id
+                WHERE c.created_at >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+                ORDER BY c.created_at DESC
+                LIMIT 10
+            `);
+            
+            res.json(comments);
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener comentarios recientes:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener comentarios recientes' });
+    }
+});
+
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

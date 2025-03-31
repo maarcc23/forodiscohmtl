@@ -580,39 +580,55 @@
             const discussionsContainer = document.getElementById('discussions-container');
             
             // Limpiar el contenedor de discusiones
-            discussionsContainer.innerHTML = '';
+            discussionsContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Cargando últimas discusiones...</div>';
             
-            // Obtener las discusiones de la API
-            fetch('/api/discussions')
+            // Obtener los comentarios recientes de la API
+            fetch('/api/recent-comments')
                 .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        discussionsContainer.innerHTML = '<p>No hay discusiones disponibles en este momento.</p>';
+                .then(comments => {
+                    // Limpiar el contenedor
+                    discussionsContainer.innerHTML = '';
+                    
+                    if (comments.length === 0) {
+                        discussionsContainer.innerHTML = '<p>No hay discusiones recientes en las últimas 24 horas.</p>';
                         return;
                     }
                     
-                    // Crear una tarjeta para cada discusión
-                    data.forEach(discussion => {
+                    // Crear una tarjeta para cada comentario reciente
+                    comments.forEach(comment => {
                         const discussionCard = document.createElement('div');
                         discussionCard.className = 'trend-card';
                         
                         // Formatear la fecha de creación
-                        const createdDate = new Date(discussion.created_at);
+                        const createdDate = new Date(comment.created_at);
                         const now = new Date();
                         const diffTime = Math.abs(now - createdDate);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        const dateText = diffDays <= 1 ? 'hoy' : `hace ${diffDays} días`;
+                        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                        const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        let timeAgo;
+                        if (diffHours > 0) {
+                            timeAgo = `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+                        } else {
+                            timeAgo = `hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+                        }
+                        
+                        // Truncar el contenido si es muy largo
+                        const maxLength = 150;
+                        let truncatedContent = comment.content;
+                        if (truncatedContent.length > maxLength) {
+                            truncatedContent = truncatedContent.substring(0, maxLength) + '...';
+                        }
                         
                         discussionCard.innerHTML = `
-                            <h3 class="trend-title">${discussion.title}</h3>
-                            <p class="trend-description">${discussion.content}</p>
-                            <div class="trend-location"><i class="fas fa-user"></i> ${discussion.created_by}</div>
+                            <h3 class="trend-title">${comment.venue_name}</h3>
+                            <p class="trend-description">${truncatedContent}</p>
+                            <div class="trend-location"><i class="fas fa-user"></i> ${comment.username}</div>
                             <div class="trend-stats">
-                                <span>${discussion.interaction_count} respuestas</span>
-                                <span>Creado ${dateText}</span>
+                                <span><i class="far fa-clock"></i> ${timeAgo}</span>
                             </div>
                             <div class="trend-actions">
-                                <a href="/discussion.html?id=${discussion.id}" class="btn btn-info">Ver discusión</a>
+                                <a href="/foros.html?venue=${comment.venue_id}" class="btn btn-info">Ver discusión</a>
                             </div>
                         `;
                         
@@ -620,8 +636,8 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error al cargar las discusiones:', error);
-                    // Si hay un error con la API, cargar datos de ejemplo desde localStorage como alternativa
+                    console.error('Error al cargar los comentarios recientes:', error);
+                    // Si hay un error con la API, cargar datos de ejemplo como alternativa
                     loadExampleDiscussions();
                 });
         }
