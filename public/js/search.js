@@ -179,15 +179,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>${venue.description || 'Sin descripción'}</p>
                     <p class="venue-location">
                         <i class="fas fa-map-marker-alt"></i> 
-                        ${venue.address || 'Dirección no disponible'}
+                        ${venue.location || 'Dirección no disponible'}
                     </p>
                 </div>
                 <div class="result-actions">
                     <button onclick="saveVenue(${venue.id}, this)" class="btn-save ${isSaved ? 'saved' : ''}">
                         <i class="fas fa-star"></i> ${isSaved ? 'Guardado' : 'Guardar'}
-                    </button>
-                    <button onclick="viewVenue(${venue.id})" class="btn-view">
-                        <i class="fas fa-eye"></i> Ver
                     </button>
                 </div>
             `;
@@ -389,8 +386,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .search-results {
             position: absolute;
             top: 100%;
-            left: 0;
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
             background-color: #1a1a1a;
             border-radius: 0 0 10px 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -408,8 +407,9 @@ document.addEventListener('DOMContentLoaded', function() {
             padding: 15px;
             border-bottom: 1px solid #333;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            text-align: center;
             transition: background-color 0.2s ease;
         }
         
@@ -422,7 +422,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         .result-info {
-            flex: 1;
+            width: 100%;
+            margin-bottom: 15px;
         }
         
         .result-info h3 {
@@ -444,7 +445,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         .result-actions {
             display: flex;
-            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            max-width: 200px;
         }
         
         .result-actions button {
@@ -469,15 +472,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .btn-save.saved {
             background-color: #ff4b6e;
             color: white;
-        }
-        
-        .btn-view {
-            background-color: #ff4b6e;
-            color: white;
-        }
-        
-        .btn-view:hover {
-            background-color: #e63e5c;
         }
         
         .search-loading,
