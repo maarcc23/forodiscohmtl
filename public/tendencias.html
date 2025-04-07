@@ -182,6 +182,38 @@
             gap: 2rem;
         }
 
+        /* Estilo para mostrar los locales más seguidos en scroll horizontal */
+        .trending-venues {
+            display: flex;
+            overflow-x: auto;
+            gap: 1.5rem;
+            padding: 0.5rem 0;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--card-bg);
+        }
+
+        .trending-venues::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .trending-venues::-webkit-scrollbar-track {
+            background: var(--card-bg);
+            border-radius: 4px;
+        }
+
+        .trending-venues::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .trending-venues .trend-card {
+            min-width: 300px;
+            width: 300px;
+            flex-shrink: 0;
+        }
+
         .trend-card {
             background: var(--card-bg);
             border-radius: 15px;
@@ -367,12 +399,12 @@
     <div class="container">
         <h1>Nuevas Tendencias</h1>
         
-        <h2 class="section-title">Locales más seguidos esta semana</h2>
-        <div id="trends-container" class="trends-grid">
+        <h2 class="section-title">Locales más seguidos</h2>
+        <div id="trends-container" class="trending-venues">
             <!-- Las tendencias se cargarán dinámicamente aquí -->
         </div>
         
-        <h2 class="section-title">Últimas Discusiones</h2>
+        <h2 class="section-title">Últimas Discusiones 24h</h2>
         <div id="discussions-container" class="trends-grid">
             <!-- Las discusiones se cargarán dinámicamente aquí -->
         </div>
@@ -469,39 +501,40 @@
             const trendsContainer = document.getElementById('trends-container');
             
             // Limpiar el contenedor de tendencias
-            trendsContainer.innerHTML = '';
+            trendsContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Cargando locales más seguidos...</div>';
             
-            // Obtener las tendencias de la API
-            fetch('/api/trends')
+            // Obtener los locales más seguidos de la API
+            fetch('/api/most-followed-venues')
                 .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        trendsContainer.innerHTML = '<p>No hay tendencias disponibles en este momento.</p>';
+                .then(venues => {
+                    // Limpiar el contenedor
+                    trendsContainer.innerHTML = '';
+                    
+                    if (venues.length === 0) {
+                        trendsContainer.innerHTML = '<p>No hay locales disponibles en este momento.</p>';
                         return;
                     }
                     
-                    // Crear una tarjeta para cada tendencia
-                    data.forEach(trend => {
+                    // Crear una tarjeta para cada local
+                    venues.forEach(venue => {
                         const trendCard = document.createElement('div');
                         trendCard.className = 'trend-card';
                         
-                        // Formatear la fecha de creación
-                        const createdDate = new Date(trend.created_at);
-                        const now = new Date();
-                        const diffTime = Math.abs(now - createdDate);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        const dateText = diffDays <= 1 ? 'hoy' : `hace ${diffDays} días`;
+                        // Formatear la descripción si es muy larga
+                        let description = venue.description || 'Sin descripción disponible';
+                        if (description.length > 100) {
+                            description = description.substring(0, 100) + '...';
+                        }
                         
                         trendCard.innerHTML = `
-                            <h3 class="trend-title">${trend.title}</h3>
-                            <p class="trend-description">${trend.content}</p>
-                            <div class="trend-location"><i class="fas fa-map-marker-alt"></i> Barcelona</div>
+                            <h3 class="trend-title">${venue.name}</h3>
+                            <p class="trend-description">${description}</p>
+                            <div class="trend-location"><i class="fas fa-map-marker-alt"></i> ${venue.location || 'Barcelona'}</div>
                             <div class="trend-stats">
-                                <span>${trend.interaction_count} interacciones</span>
-                                <span>Creado ${dateText}</span>
+                                <span><i class="fas fa-users"></i> ${venue.follower_count || 0} seguidores</span>
                             </div>
                             <div class="trend-actions">
-                                <a href="/forum.html?id=${trend.forum_id}" class="btn btn-accent">Ver foro</a>
+                                <a href="/foros.html?venue=${venue.id}" class="btn btn-accent">Ver foro</a>
                             </div>
                         `;
                         
@@ -509,8 +542,8 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error al cargar las tendencias:', error);
-                    // Si hay un error con la API, cargar datos de ejemplo desde localStorage como alternativa
+                    console.error('Error al cargar los locales más seguidos:', error);
+                    // Si hay un error con la API, cargar datos de ejemplo como alternativa
                     loadExampleTrends();
                 });
         }
@@ -580,39 +613,55 @@
             const discussionsContainer = document.getElementById('discussions-container');
             
             // Limpiar el contenedor de discusiones
-            discussionsContainer.innerHTML = '';
+            discussionsContainer.innerHTML = '<div class="loading-indicator"><i class="fas fa-spinner fa-spin"></i> Cargando últimas discusiones...</div>';
             
-            // Obtener las discusiones de la API
-            fetch('/api/discussions')
+            // Obtener los comentarios recientes de la API
+            fetch('/api/recent-comments')
                 .then(response => response.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        discussionsContainer.innerHTML = '<p>No hay discusiones disponibles en este momento.</p>';
+                .then(comments => {
+                    // Limpiar el contenedor
+                    discussionsContainer.innerHTML = '';
+                    
+                    if (comments.length === 0) {
+                        discussionsContainer.innerHTML = '<p>No hay discusiones recientes en las últimas 24 horas.</p>';
                         return;
                     }
                     
-                    // Crear una tarjeta para cada discusión
-                    data.forEach(discussion => {
+                    // Crear una tarjeta para cada comentario reciente
+                    comments.forEach(comment => {
                         const discussionCard = document.createElement('div');
                         discussionCard.className = 'trend-card';
                         
                         // Formatear la fecha de creación
-                        const createdDate = new Date(discussion.created_at);
+                        const createdDate = new Date(comment.created_at);
                         const now = new Date();
                         const diffTime = Math.abs(now - createdDate);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        const dateText = diffDays <= 1 ? 'hoy' : `hace ${diffDays} días`;
+                        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                        const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        let timeAgo;
+                        if (diffHours > 0) {
+                            timeAgo = `hace ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+                        } else {
+                            timeAgo = `hace ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+                        }
+                        
+                        // Truncar el contenido si es muy largo
+                        const maxLength = 150;
+                        let truncatedContent = comment.content;
+                        if (truncatedContent.length > maxLength) {
+                            truncatedContent = truncatedContent.substring(0, maxLength) + '...';
+                        }
                         
                         discussionCard.innerHTML = `
-                            <h3 class="trend-title">${discussion.title}</h3>
-                            <p class="trend-description">${discussion.content}</p>
-                            <div class="trend-location"><i class="fas fa-user"></i> ${discussion.created_by}</div>
+                            <h3 class="trend-title">${comment.venue_name}</h3>
+                            <p class="trend-description">${truncatedContent}</p>
+                            <div class="trend-location"><i class="fas fa-user"></i> ${comment.username}</div>
                             <div class="trend-stats">
-                                <span>${discussion.interaction_count} respuestas</span>
-                                <span>Creado ${dateText}</span>
+                                <span><i class="far fa-clock"></i> ${timeAgo}</span>
                             </div>
                             <div class="trend-actions">
-                                <a href="/discussion.html?id=${discussion.id}" class="btn btn-info">Ver discusión</a>
+                                <a href="/foros.html?venue=${comment.venue_id}" class="btn btn-info">Ver discusión</a>
                             </div>
                         `;
                         
@@ -620,8 +669,8 @@
                     });
                 })
                 .catch(error => {
-                    console.error('Error al cargar las discusiones:', error);
-                    // Si hay un error con la API, cargar datos de ejemplo desde localStorage como alternativa
+                    console.error('Error al cargar los comentarios recientes:', error);
+                    // Si hay un error con la API, cargar datos de ejemplo como alternativa
                     loadExampleDiscussions();
                 });
         }
