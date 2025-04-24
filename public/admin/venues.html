@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Venues - ForoDisco</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .panel-title {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+
+        .venue-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            background-color: #ff4b6e;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff3459;
+        }
+
+        .venues-list {
+            margin-top: 2rem;
+        }
+
+        .venue-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .venue-card h3 {
+            color: #333;
+            margin: 0 0 1rem 0;
+        }
+
+        .venue-info {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .error-message {
+            color: #ff4b6e;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #28a745;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Admin: <span class="username" id="adminUsername"></span></span>
+            <a href="#" onclick="checkAuth()" class="btn-logout">Cerrar sesión</a>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <h1 class="panel-title">Panel de Administración - Gestión de Venues</h1>
+        
+        <div class="venue-form">
+            <h2>Registrar Nueva Venue</h2>
+            <form id="venueForm">
+                <div class="form-group">
+                    <label for="name">Nombre de la Venue</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location">Ubicación</label>
+                    <input type="text" id="location" name="location" required placeholder="Ej: Carrer Francesc Layret, 35, 08302 Mataró, Barcelona">
+                </div>
+
+                <div class="form-group">
+                    <label for="contact_info">Información de Contacto</label>
+                    <input type="text" id="contact_info" name="contact_info" required placeholder="Ej: Tel: 123456789, Email: contacto@venue.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Descripción</label>
+                    <textarea id="description" name="description" required placeholder="Describe la venue, su ambiente, música, etc."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Registrar Venue</button>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+            </form>
+        </div>
+
+        <div class="venues-list">
+            <h2>Venues Registradas</h2>
+            <div id="venuesList">
+                <!-- Aquí se mostrarán las venues -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar si el usuario es admin al cargar la página
+        window.addEventListener('load', () => {
+            try {
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                
+                // Verificar si está autenticado y es admin
+                if (!currentUser || !currentUser.authenticated || currentUser.role !== 'admin') {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                // Mostrar el nombre de usuario
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                
+                // Cargar las venues
+                loadVenues();
+            } catch (error) {
+                console.error('Error de autenticación:', error);
+                window.location.href = '/login.html';
+            }
+        });
+
+        async function loadVenues() {
+            try {
+                console.log('Intentando cargar venues...');
+                
+                // Intentar cargar desde localStorage primero
+                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                
+                const venuesList = document.getElementById('venuesList');
+                venuesList.innerHTML = '';
+
+                if (venues.length === 0) {
+                    // Si no hay venues en localStorage, intentar cargar desde la API
+                    try {
+                        const response = await fetch('/api/venues', {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Respuesta de venues desde API:', data);
+                            
+                            if (data.venues && Array.isArray(data.venues) && data.venues.length > 0) {
+                                // Guardar en localStorage
+                                localStorage.setItem('venues', JSON.stringify(data.venues));
+                                renderVenues(data.venues);
+                                return;
+                            }
+                        }
+                    } catch (apiError) {
+                        console.error('Error al cargar venues desde API:', apiError);
+                    }
+                    
+                    venuesList.innerHTML = '<p>No hay venues registradas.</p>';
+                    return;
+                }
+                
+                // Renderizar venues desde localStorage
+                renderVenues(venues);
+            } catch (error) {
+                console.error('Error al cargar venues:', error);
+                document.getElementById('venuesList').innerHTML = '<p>Error al cargar las venues: ' + error.message + '</p>';
+            }
+        }
+        
+        function renderVenues(venues) {
+            const venuesList = document.getElementById('venuesList');
+            venuesList.innerHTML = '';
+            
+            venues.forEach(venue => {
+                const venueCard = document.createElement('div');
+                venueCard.className = 'venue-card';
+                venueCard.innerHTML = `
+                    <h3>${venue.name}</h3>
+                    <div class="venue-info"><strong>Ubicación:</strong> ${venue.location || 'No especificada'}</div>
+                    <div class="venue-info"><strong>Contacto:</strong> ${venue.contact_info || 'No especificado'}</div>
+                    <div class="venue-info"><strong>Seguidores:</strong> ${venue.follower_count || 0}</div>
+                    <div class="venue-info"><strong>Rating:</strong> ${venue.rating || 0}/5</div>
+                    <p>${venue.description || 'Sin descripción'}</p>
+                `;
+                venuesList.appendChild(venueCard);
+            });
+        }
+
+        document.getElementById('venueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                location: document.getElementById('location').value,
+                contact_info: document.getElementById('contact_info').value,
+                description: document.getElementById('description').value,
+                id: Date.now().toString(),
+                follower_count: 0,
+                rating: 0
+            };
+
+            console.log('Enviando datos:', formData);
+
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                // Intentar guardar en la API primero
+                let apiSuccess = false;
+                
+                try {
+                    const response = await fetch('/api/venues', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+                    console.log('Respuesta del servidor:', data);
+
+                    if (response.ok) {
+                        apiSuccess = true;
+                    }
+                } catch (apiError) {
+                    console.error('Error al guardar en API:', apiError);
+                }
+                
+                // Si la API falló o no está disponible, guardar en localStorage
+                if (!apiSuccess) {
+                    // Obtener venues existentes
+                    const venues = JSON.parse(localStorage.getItem('venues') || '[]');
+                    
+                    // Añadir la nueva venue
+                    venues.push(formData);
+                    
+                    // Guardar en localStorage
+                    localStorage.setItem('venues', JSON.stringify(venues));
+                }
+
+                // Mostrar mensaje de éxito
+                errorMessage.style.display = 'none';
+                successMessage.textContent = 'Venue registrada correctamente';
+                successMessage.style.display = 'block';
+                
+                // Limpiar formulario
+                document.getElementById('venueForm').reset();
+                
+                // Recargar la lista de venues
+                loadVenues();
+            } catch (error) {
+                console.error('Error al registrar venue:', error);
+                successMessage.style.display = 'none';
+                errorMessage.textContent = 'Error al registrar venue: ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            checkAdminStatus();
+        });
+    </script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

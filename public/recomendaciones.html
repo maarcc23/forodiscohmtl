@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recomendaciones - ForoDiscoHTL</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        header {
+            background-color: #1e1e1e;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        header h1 {
+            margin: 0;
+            color: #ff4081;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .back-button:hover {
+            background-color: #ff4081;
+        }
+        
+        .recommendations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .recommendation-card {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            border: 1px solid #333;
+            padding: 20px;
+        }
+        
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .recommendation-title {
+            margin: 0;
+            color: #ff4081;
+            font-size: 1.4rem;
+        }
+        
+        .recommendation-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        .recommendation-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .recommendation-author i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
+        
+        .recommendation-date {
+            display: flex;
+            align-items: center;
+        }
+        
+        .recommendation-date i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
+        
+        .recommendation-content {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .recommendation-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .recommendation-stats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .stat {
+            display: flex;
+            align-items: center;
+            color: #999;
+        }
+        
+        .stat i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn i {
+            margin-right: 5px;
+        }
+        
+        .btn:hover {
+            background-color: #ff4081;
+        }
+        
+        .btn-primary {
+            background-color: #ff4081;
+        }
+        
+        .btn-primary:hover {
+            background-color: #d81b60;
+        }
+        
+        .new-recommendation-form {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #333;
+        }
+        
+        .form-title {
+            margin-top: 0;
+            color: #ff4081;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: white;
+            font-family: inherit;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .comments-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        
+        .comments-title {
+            color: #ff4081;
+            margin-bottom: 15px;
+        }
+        
+        .comment {
+            background-color: #252525;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+        }
+        
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #ccc;
+        }
+        
+        .comment-date {
+            color: #999;
+            font-size: 0.8rem;
+        }
+        
+        .comment-content {
+            color: #ddd;
+        }
+        
+        .new-comment-form {
+            margin-top: 20px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: #1e1e1e;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px;
+            animation: modalFadeIn 0.3s;
+        }
+        
+        @keyframes modalFadeIn {
+            from {opacity: 0; transform: translateY(-50px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #ff4081;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #ff4081;
+        }
+        
+        .error-message {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border: 1px solid #ff6b6b;
+        }
+        
+        .success-message {
+            background-color: rgba(0, 255, 0, 0.1);
+            color: #4caf50;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border: 1px solid #4caf50;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .recommendation-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .recommendation-meta {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .recommendation-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .recommendation-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Recomendaciones</h1>
+    </header>
+    
+    <div class="container">
+        <a href="index.html" class="back-button">
+            <i class="fas fa-arrow-left"></i> Volver a la página principal
+        </a>
+        
+        <div id="auth-message"></div>
+        
+        <div id="new-recommendation-form-container" style="display: none;">
+            <div class="new-recommendation-form">
+                <h2 class="form-title">Crear nueva recomendación</h2>
+                <div id="new-recommendation-error" class="error-message" style="display: none;"></div>
+                <div id="new-recommendation-success" class="success-message" style="display: none;"></div>
+                
+                <form id="recommendation-form">
+                    <div class="form-group">
+                        <label for="recommendation-title">Título</label>
+                        <input type="text" id="recommendation-title" class="form-control" placeholder="Título de la recomendación" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="recommendation-description">Descripción</label>
+                        <textarea id="recommendation-description" class="form-control" placeholder="Describe tu recomendación..." required></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Publicar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div id="recommendations-container" class="recommendations-container">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Cargando recomendaciones...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para ver detalles y comentarios -->
+    <div id="recommendation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="recommendation-detail"></div>
+            
+            <div class="comments-section">
+                <h3 class="comments-title">Comentarios</h3>
+                <div id="comments-container"></div>
+                
+                <div id="new-comment-form-container" style="display: none;">
+                    <div class="new-comment-form">
+                        <div id="new-comment-error" class="error-message" style="display: none;"></div>
+                        <form id="comment-form">
+                            <div class="form-group">
+                                <textarea id="comment-description" class="form-control" placeholder="Escribe un comentario..." required></textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn">
+                                    <i class="fas fa-comment"></i> Comentar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables globales
+        let currentUser = null;
+        let currentRecommendationId = null;
+        
+        // Comprobar si el usuario está autenticado
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/current-user');
+                const data = await response.json();
+                
+                if (data.success && data.user) {
+                    currentUser = data.user;
+                    document.getElementById('auth-message').innerHTML = '';
+                    document.getElementById('new-recommendation-form-container').style.display = 'block';
+                    document.getElementById('new-comment-form-container').style.display = 'block';
+                    return true;
+                } else {
+                    document.getElementById('auth-message').innerHTML = `
+                        <div class="error-message">
+                            Debes iniciar sesión para crear recomendaciones y comentarios.
+                            <a href="login.html" style="color: #ff4081; margin-left: 10px;">Iniciar sesión</a>
+                        </div>
+                    `;
+                    document.getElementById('new-recommendation-form-container').style.display = 'none';
+                    document.getElementById('new-comment-form-container').style.display = 'none';
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error al verificar autenticación:', error);
+                document.getElementById('auth-message').innerHTML = `
+                    <div class="error-message">
+                        Error al verificar la autenticación. Por favor, intenta de nuevo.
+                    </div>
+                `;
+                return false;
+            }
+        }
+        
+        // Inicializar la tabla de recomendaciones
+        async function initRecommendationsTable() {
+            try {
+                await fetch('/api/init-recommendations');
+                console.log('Tabla de recomendaciones inicializada');
+            } catch (error) {
+                console.error('Error al inicializar tabla de recomendaciones:', error);
+            }
+        }
+        
+        // Cargar todas las recomendaciones
+        async function loadRecommendations() {
+            const recommendationsContainer = document.getElementById('recommendations-container');
+            
+            try {
+                const response = await fetch('/api/recommendations');
+                const recommendations = await response.json();
+                
+                recommendationsContainer.innerHTML = '';
+                
+                if (recommendations.length === 0) {
+                    recommendationsContainer.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <p>No hay recomendaciones disponibles.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                recommendations.forEach(recommendation => {
+                    const date = new Date(recommendation.created_at);
+                    const formattedDate = date.toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                    
+                    const card = document.createElement('div');
+                    card.className = 'recommendation-card';
+                    card.innerHTML = `
+                        <div class="recommendation-header">
+                            <h3 class="recommendation-title">${recommendation.title}</h3>
+                        </div>
+                        <div class="recommendation-meta">
+                            <div class="recommendation-author">
+                                <i class="fas fa-user"></i> ${recommendation.author_name || 'Usuario anónimo'}
+                            </div>
+                            <div class="recommendation-date">
+                                <i class="far fa-calendar-alt"></i> ${formattedDate}
+                            </div>
+                        </div>
+                        <div class="recommendation-content">
+                            ${recommendation.description}
+                        </div>
+                        <div class="recommendation-actions">
+                            <div class="recommendation-stats">
+                                <div class="stat">
+                                    <i class="fas fa-heart"></i> ${recommendation.interaction_count}
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-comment"></i> ${recommendation.comments_count}
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn view-details" data-id="${recommendation.id}">
+                                    <i class="fas fa-eye"></i> Ver detalles
+                                </button>
+                                <button class="btn like-recommendation" data-id="${recommendation.id}">
+                                    <i class="fas fa-heart"></i> Me gusta
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    recommendationsContainer.appendChild(card);
+                    
+                    // Añadir event listeners
+                    card.querySelector('.view-details').addEventListener('click', () => {
+                        openRecommendationDetails(recommendation.id);
+                    });
+                    
+                    card.querySelector('.like-recommendation').addEventListener('click', () => {
+                        likeRecommendation(recommendation.id);
+                    });
+                });
+            } catch (error) {
+                console.error('Error al cargar recomendaciones:', error);
+                recommendationsContainer.innerHTML = `
+                    <div class="error-message" style="text-align: center; padding: 20px;">
+                        <p>Error al cargar las recomendaciones. Por favor, intenta de nuevo.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Abrir modal con detalles de una recomendación
+        async function openRecommendationDetails(recommendationId) {
+            currentRecommendationId = recommendationId;
+            const modal = document.getElementById('recommendation-modal');
+            const detailContainer = document.getElementById('recommendation-detail');
+            const commentsContainer = document.getElementById('comments-container');
+            
+            detailContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando detalles...</div>';
+            commentsContainer.innerHTML = '';
+            
+            modal.style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/recommendations/${recommendationId}`);
+                const data = await response.json();
+                
+                const recommendation = data.recommendation;
+                const comments = data.comments;
+                
+                const date = new Date(recommendation.created_at);
+                const formattedDate = date.toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                detailContainer.innerHTML = `
+                    <div class="recommendation-header">
+                        <h2 class="recommendation-title">${recommendation.title}</h2>
+                    </div>
+                    <div class="recommendation-meta">
+                        <div class="recommendation-author">
+                            <i class="fas fa-user"></i> ${recommendation.author_name || 'Usuario anónimo'}
+                        </div>
+                        <div class="recommendation-date">
+                            <i class="far fa-calendar-alt"></i> ${formattedDate}
+                        </div>
+                    </div>
+                    <div class="recommendation-content">
+                        ${recommendation.description}
+                    </div>
+                    <div class="recommendation-actions">
+                        <div class="recommendation-stats">
+                            <div class="stat">
+                                <i class="fas fa-heart"></i> ${recommendation.interaction_count}
+                            </div>
+                        </div>
+                        <button class="btn like-recommendation-detail" data-id="${recommendation.id}">
+                            <i class="fas fa-heart"></i> Me gusta
+                        </button>
+                    </div>
+                `;
+                
+                // Añadir event listener para el botón de me gusta
+                detailContainer.querySelector('.like-recommendation-detail').addEventListener('click', () => {
+                    likeRecommendation(recommendation.id);
+                });
+                
+                // Mostrar comentarios
+                if (comments.length === 0) {
+                    commentsContainer.innerHTML = '<p>No hay comentarios todavía.</p>';
+                } else {
+                    commentsContainer.innerHTML = '';
+                    comments.forEach(comment => {
+                        const commentDate = new Date(comment.created_at);
+                        const formattedCommentDate = commentDate.toLocaleDateString('es-ES', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        
+                        const commentElement = document.createElement('div');
+                        commentElement.className = 'comment';
+                        commentElement.innerHTML = `
+                            <div class="comment-header">
+                                <div class="comment-author">
+                                    <i class="fas fa-user"></i> ${comment.author_name || 'Usuario anónimo'}
+                                </div>
+                                <div class="comment-date">
+                                    ${formattedCommentDate}
+                                </div>
+                            </div>
+                            <div class="comment-content">
+                                ${comment.description}
+                            </div>
+                        `;
+                        
+                        commentsContainer.appendChild(commentElement);
+                    });
+                }
+                
+                // Mostrar formulario de comentarios si el usuario está autenticado
+                await checkAuth();
+                
+            } catch (error) {
+                console.error('Error al cargar detalles de la recomendación:', error);
+                detailContainer.innerHTML = `
+                    <div class="error-message">
+                        Error al cargar los detalles. Por favor, intenta de nuevo.
+                    </div>
+                `;
+            }
+        }
+        
+        // Dar "me gusta" a una recomendación
+        async function likeRecommendation(recommendationId) {
+            if (!await checkAuth()) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/recommendations/${recommendationId}/like`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Recargar recomendaciones para actualizar el contador
+                    loadRecommendations();
+                    
+                    // Si el modal está abierto, actualizar también los detalles
+                    if (currentRecommendationId === recommendationId) {
+                        openRecommendationDetails(recommendationId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al dar me gusta:', error);
+                alert('Error al dar me gusta. Por favor, intenta de nuevo.');
+            }
+        }
+        
+        // Crear una nueva recomendación
+        async function createRecommendation(event) {
+            event.preventDefault();
+            
+            if (!await checkAuth()) {
+                return;
+            }
+            
+            const title = document.getElementById('recommendation-title').value;
+            const description = document.getElementById('recommendation-description').value;
+            
+            const errorElement = document.getElementById('new-recommendation-error');
+            const successElement = document.getElementById('new-recommendation-success');
+            
+            errorElement.style.display = 'none';
+            successElement.style.display = 'none';
+            
+            if (!title || !description) {
+                errorElement.textContent = 'Por favor, completa todos los campos.';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/recommendations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, description })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Limpiar formulario
+                    document.getElementById('recommendation-form').reset();
+                    
+                    // Mostrar mensaje de éxito
+                    successElement.textContent = 'Recomendación creada correctamente.';
+                    successElement.style.display = 'block';
+                    
+                    // Recargar recomendaciones
+                    loadRecommendations();
+                    
+                    // Ocultar mensaje después de 3 segundos
+                    setTimeout(() => {
+                        successElement.style.display = 'none';
+                    }, 3000);
+                } else {
+                    errorElement.textContent = data.message || 'Error al crear la recomendación.';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error al crear recomendación:', error);
+                errorElement.textContent = 'Error al crear la recomendación. Por favor, intenta de nuevo.';
+                errorElement.style.display = 'block';
+            }
+        }
+        
+        // Añadir un comentario a una recomendación
+        async function addComment(event) {
+            event.preventDefault();
+            
+            if (!await checkAuth() || !currentRecommendationId) {
+                return;
+            }
+            
+            const description = document.getElementById('comment-description').value;
+            const errorElement = document.getElementById('new-comment-error');
+            
+            errorElement.style.display = 'none';
+            
+            if (!description) {
+                errorElement.textContent = 'Por favor, escribe un comentario.';
+                errorElement.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/recommendations/${currentRecommendationId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ description })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Limpiar formulario
+                    document.getElementById('comment-form').reset();
+                    
+                    // Recargar comentarios
+                    openRecommendationDetails(currentRecommendationId);
+                    
+                    // Recargar recomendaciones para actualizar el contador de comentarios
+                    loadRecommendations();
+                } else {
+                    errorElement.textContent = data.message || 'Error al añadir el comentario.';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error al añadir comentario:', error);
+                errorElement.textContent = 'Error al añadir el comentario. Por favor, intenta de nuevo.';
+                errorElement.style.display = 'block';
+            }
+        }
+        
+        // Cerrar el modal
+        function closeModal() {
+            document.getElementById('recommendation-modal').style.display = 'none';
+            currentRecommendationId = null;
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Inicializar tabla de recomendaciones
+            await initRecommendationsTable();
+            
+            // Comprobar autenticación
+            await checkAuth();
+            
+            // Cargar recomendaciones
+            loadRecommendations();
+            
+            // Event listener para el formulario de recomendaciones
+            document.getElementById('recommendation-form').addEventListener('submit', createRecommendation);
+            
+            // Event listener para el formulario de comentarios
+            document.getElementById('comment-form').addEventListener('submit', addComment);
+            
+            // Event listener para cerrar el modal
+            document.querySelector('.close').addEventListener('click', closeModal);
+            
+            // Cerrar el modal al hacer clic fuera de él
+            window.addEventListener('click', (event) => {
+                const modal = document.getElementById('recommendation-modal');
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
