@@ -4,9 +4,8 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const mysql = require('mysql2/promise');
-
-const app = express();
-const PORT = process.env.PORT || 3002;
+const multer = require('multer');
+const fs = require('fs');
 
 // Configuración de la base de datos
 const dbConfig = {
@@ -20,6 +19,48 @@ const dbConfig = {
 const pool = mysql.createPool(dbConfig);
 
 // Middleware
+const app = express();
+const PORT = process.env.PORT || 3002;
+
+// Configuración de multer para almacenar las imágenes de perfil
+const profileImagesDir = path.join(__dirname, 'public', 'uploads', 'profile_images');
+
+// Asegurarse de que el directorio existe
+if (!fs.existsSync(profileImagesDir)) {
+    fs.mkdirSync(profileImagesDir, { recursive: true });
+}
+
+// Configuración de almacenamiento para multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, profileImagesDir);
+    },
+    filename: function (req, file, cb) {
+        // Generar un nombre único para la imagen
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'profile-' + uniqueSuffix + ext);
+    }
+});
+
+// Filtro para aceptar solo imágenes
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten imágenes'), false);
+    }
+};
+
+// Configuración de multer
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    }
+});
+
 app.use(express.json());
 app.use(express.static('public'));
 app.use(cors({
@@ -1676,6 +1717,67 @@ app.get('/api/most-followed-venues', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener locales más seguidos:', error);
         res.status(500).json({ success: false, message: 'Error al obtener locales más seguidos' });
+    }
+});
+
+// Endpoint para subir imágenes de perfil
+app.post('/api/upload-profile-image', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Actualizar la imagen de perfil del usuario
+            await connection.query(
+                'UPDATE users SET profile_image = ? WHERE id = ?',
+                [req.file.filename, req.session.userId]
+            );
+
+            res.json({ success: true, message: 'Imagen de perfil actualizada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al subir imagen de perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al subir imagen de perfil' });
+    }
+});
+
+// Endpoint para obtener la imagen de perfil del usuario actual
+app.get('/api/user/profile-image', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const userId = req.session.userId;
+        const connection = await pool.getConnection();
+        try {
+            // Obtener la imagen de perfil del usuario
+            const [users] = await connection.query(
+                'SELECT profile_image FROM users WHERE id = ?',
+                [userId]
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            const profileImage = users[0].profile_image;
+
+            res.json({
+                success: true,
+                profileImage: profileImage
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener imagen de perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener imagen de perfil' });
     }
 });
 
