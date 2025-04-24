@@ -279,6 +279,22 @@
             opacity: 1;
             transform: translateY(0);
         }
+        
+        .members-count {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 0.9rem;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #ff4081;
+        }
+        
+        .members-count i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
     </style>
 </head>
 <body>
@@ -297,10 +313,12 @@
                         <h1 id="forumTitle" class="forum-title">Cargando...</h1>
                         <div class="forum-meta">
                             <span><i class="fas fa-map-marker-alt"></i> <span id="forumLocation">Cargando...</span></span>
-                            <span><i class="fas fa-users"></i> <span id="forumMembers">0</span> - miembros</span>
                         </div>
                     </div>
                     <div class="forum-actions">
+                        <div class="members-count">
+                            <span><i class="fas fa-users"></i> <span id="forumMembers">0</span> - miembros</span>
+                        </div>
                         <button id="followButton" class="action-button">
                             <i class="far fa-heart"></i>
                         </button>
