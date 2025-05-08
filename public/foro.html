@@ -173,18 +173,24 @@
         
         .post-header {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .post-user-info {
+            display: flex;
+            flex-direction: column;
         }
         
         .post-author {
             font-weight: bold;
             color: #ff4081;
+            margin-right: 10px;
         }
         
         .post-date {
-            color: #aaa;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            color: #888;
         }
         
         .post-content {
@@ -355,6 +361,16 @@
         .reply-author {
             font-weight: bold;
             color: #ff4081;
+        }
+        
+        /* Estilos para la foto de perfil */
+        .profile-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 2px solid #ff4081;
         }
     </style>
 </head>
@@ -628,15 +644,45 @@
                 element.className = 'post';
                 element.dataset.commentId = comment.id;
                 
+                // Para depuración - mostrar en consola la información del comentario
+                console.log('Datos del comentario:', comment);
+                
                 let replyingToHtml = '';
                 if (isReply && replyingTo) {
                     replyingToHtml = `<div class="replying-to">En respuesta a <span class="reply-author">${replyingTo}</span></div>`;
                 }
                 
+                // Imagen de perfil predeterminada en base64 (un avatar simple)
+                const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iI2ZmNDA4MSIvPjxwYXRoIGQ9Ik0xMCw4NWMwLTIyLDE4LTQwLDQwLTQwczQwLDE4LDQwLDQwSDEweiIgZmlsbD0iI2ZmNDA4MSIvPjwvc3ZnPg==';
+                
+                // Verificar si el comentario tiene imagen de perfil
+                let profileImageUrl;
+                
+                if (comment.profile_image) {
+                    // Si tiene imagen de perfil, usar la ruta correcta
+                    profileImageUrl = `/uploads/profile_images/${comment.profile_image}`;
+                    console.log('Usando imagen de perfil:', profileImageUrl);
+                } else if (comment.user_image) {
+                    // Alternativa si el campo se llama user_image
+                    profileImageUrl = `/uploads/profile_images/${comment.user_image}`;
+                    console.log('Usando user_image:', profileImageUrl);
+                } else if (comment.avatar) {
+                    // Alternativa si el campo se llama avatar
+                    profileImageUrl = `/uploads/profile_images/${comment.avatar}`;
+                    console.log('Usando avatar:', profileImageUrl);
+                } else {
+                    // Si no tiene imagen, usar la predeterminada
+                    profileImageUrl = defaultProfileImage;
+                    console.log('Usando imagen predeterminada');
+                }
+                
                 element.innerHTML = `
                     <div class="post-header">
-                        <span class="post-author">${comment.username || 'Usuario'}</span>
-                        <span class="post-date">${formatDate(comment.created_at)}</span>
+                        <img src="${profileImageUrl}" alt="Foto de perfil" class="profile-image" onerror="this.src='${defaultProfileImage}'">
+                        <div class="post-user-info">
+                            <span class="post-author">${comment.username || 'Usuario'}</span>
+                            <span class="post-date">${formatDate(comment.created_at)}</span>
+                        </div>
                     </div>
                     ${replyingToHtml}
                     <div class="post-content">

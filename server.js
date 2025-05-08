@@ -1282,7 +1282,8 @@ app.get('/api/venues/:venueId/comments', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.venue_id = ?
@@ -1334,7 +1335,8 @@ app.post('/api/venues/comments', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.id = ?`,
@@ -1394,7 +1396,8 @@ app.post('/api/venues/comments/reply', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.id = ?`,
