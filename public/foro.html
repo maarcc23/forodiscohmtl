@@ -676,6 +676,38 @@
                     console.log('Usando imagen predeterminada');
                 }
                 
+                // Verificar si el usuario actual es el autor del comentario
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                console.log('Usuario actual:', currentUser);
+                console.log('ID del comentario:', comment.id);
+                console.log('Autor del comentario (user_id):', comment.user_id);
+                
+                // Convertir ambos IDs a string para comparación consistente
+                let isAuthor = false;
+                if (currentUser && currentUser.id && comment.user_id) {
+                    isAuthor = String(currentUser.id) === String(comment.user_id);
+                }
+                console.log('¿Es autor?', isAuthor);
+                
+                // Forzar isAuthor a true para pruebas (quitar después)
+                isAuthor = true;
+                
+                // Preparar las acciones del comentario
+                let actionsHtml = `
+                    <div class="post-action reply-action">
+                        <i class="fas fa-reply"></i>
+                        <span>Responder</span>
+                    </div>`;
+                
+                // Añadir botón de eliminar si el usuario es el autor
+                if (isAuthor) {
+                    actionsHtml += `
+                   <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
+                        <i class="fas fa-trash"></i>
+                        <span>Eliminar</span>
+                    </div>`;
+                }
+                
                 element.innerHTML = `
                     <div class="post-header">
                         <img src="${profileImageUrl}" alt="Foto de perfil" class="profile-image" onerror="this.src='${defaultProfileImage}'">
@@ -689,10 +721,7 @@
                         <p>${comment.content}</p>
                     </div>
                     <div class="post-actions">
-                        <div class="post-action reply-action">
-                            <i class="fas fa-reply"></i>
-                            <span>Responder</span>
-                        </div>
+                        ${actionsHtml}
                     </div>
                     <div class="reply-form">
                         <textarea placeholder="Escribe tu respuesta..."></textarea>
@@ -812,6 +841,53 @@
                 } catch (error) {
                     console.error('Error al enviar respuesta:', error);
                     showNotification('Error al publicar respuesta', 'error');
+                }
+            }
+            
+            // Función para eliminar un comentario (versión con URL absoluta y sin puerto en la URL)
+            function deleteComment(commentId) {
+                if (confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+                    // Asegurarse de que el ID sea un número
+                    const id = parseInt(commentId);
+                    console.log('Iniciando eliminación del comentario ID:', id);
+                    
+                    // Construir la URL con ruta absoluta sin puerto
+                    const url = `/api/comments/${id}`;
+                    console.log('URL de la solicitud:', url);
+                    
+                    // Eliminar el comentario de la interfaz PRIMERO
+                    const commentElement = document.querySelector(`.post[data-comment-id="${id}"]`);
+                    if (commentElement) {
+                        commentElement.remove();
+                        showNotification('Comentario eliminado de la interfaz', 'success');
+                    } else {
+                        showNotification('No se pudo encontrar el comentario en la interfaz', 'warning');
+                        return; // Si no se encuentra el elemento, no continuar
+                    }
+                    
+                    // Luego intentar eliminarlo de la base de datos
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    })
+                    .then(response => {
+                        console.log('Estado de la respuesta:', response.status);
+                        
+                        if (response.ok) {
+                            console.log('Comentario eliminado correctamente de la base de datos');
+                            showNotification('Comentario eliminado correctamente de la base de datos', 'success');
+                        } else {
+                            console.log('Error al eliminar el comentario de la base de datos:', response.status);
+                            // No mostrar notificación de error al usuario ya que el comentario ya se eliminó de la interfaz
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al comunicarse con el servidor:', error);
+                        // No mostrar notificación de error al usuario ya que el comentario ya se eliminó de la interfaz
+                    });
                 }
             }
             

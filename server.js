@@ -1269,8 +1269,9 @@ app.get('/api/venues/:venueId/comments', async (req, res) => {
         try {
             // Verificar si la tabla comments existe
             const [tables] = await connection.query("SHOW TABLES LIKE 'comments'");
+            
+            // Si la tabla no existe, devolver una lista vacía
             if (tables.length === 0) {
-                // Si la tabla no existe, devolver una lista vacía
                 console.log('La tabla comments no existe, devolviendo lista vacía');
                 return res.json({
                     success: true,
@@ -1781,6 +1782,60 @@ app.get('/api/user/profile-image', async (req, res) => {
     } catch (error) {
         console.error('Error al obtener imagen de perfil:', error);
         res.status(500).json({ success: false, message: 'Error al obtener imagen de perfil' });
+    }
+});
+
+app.delete('/api/comments/:commentId', async (req, res) => {
+    console.log('Solicitud para eliminar comentario recibida. ID:', req.params.commentId);
+
+    const commentId = req.params.commentId;
+    console.log('ID del comentario a eliminar (original):', commentId);
+
+    // Validar que commentId es un número podría ser una buena idea aquí también
+    if (isNaN(parseInt(commentId, 10))) {
+        console.log('ID de comentario inválido:', commentId);
+        return res.status(400).json({ success: false, message: 'ID de comentario inválido.' });
+    }
+
+    let connection; // Declarar fuera para que esté disponible en el bloque finally
+
+    try {
+        connection = await pool.getConnection();
+        console.log('Conexión a la base de datos obtenida.');
+
+        // 2. Usar consultas parametrizadas para seguridad (como en el GET)
+        //    y await para la ejecución de la consulta.
+        const query_str = 'DELETE FROM comments WHERE id = ?';
+        console.log('Ejecutando consulta DELETE:', query_str, 'con ID:', commentId);
+
+        // El resultado de un DELETE, UPDATE, INSERT con mysql2/promise es un array
+        // donde el primer elemento es un objeto con información como affectedRows.
+        const [results] = await connection.query(query_str, [commentId]);
+        
+        console.log('Resultado de la eliminación:', results);
+
+        if (results.affectedRows > 0) {
+            console.log('Comentario eliminado correctamente de la base de datos.');
+            res.status(200).json({ success: true, message: 'Comentario eliminado correctamente.' });
+        } else {
+            // 3. Manejar "no encontrado" de forma más limpia (similar al GET)
+            console.log('No se encontró el comentario en la base de datos con ID:', commentId);
+            res.status(404).json({ success: false, message: 'Comentario no encontrado.' });
+            // Se elimina la lógica del TRUNCATE, ya que es una acción muy drástica
+            // y no es un fallback apropiado para un delete específico.
+        }
+
+    } catch (error) {
+        console.error('Error general al eliminar el comentario:', error);
+        // El return no es necesario aquí si es la última instrucción del catch,
+        // pero es explícito.
+        return res.status(500).json({ success: false, message: 'Error general al eliminar el comentario: ' + error.message });
+    } finally {
+        if (connection) {
+            // 4. Liberar la conexión de forma estándar (como en el GET)
+            connection.release();
+            console.log('Conexión a la base de datos liberada.');
+        }
     }
 });
 
