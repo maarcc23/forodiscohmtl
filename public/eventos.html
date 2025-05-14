@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eventos Próximos - ForoDiscoHTL</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,7 +24,11 @@
         
         header h1 {
             margin: 0;
-            color: #ff4081;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
         
         .container {
@@ -112,8 +118,12 @@
         
         .event-content h3 {
             margin: 0 0 10px 0;
-            color: #ff4081;
+            color: #ffffff;
             font-size: 1.2rem;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
         
         .event-content p {
@@ -151,6 +161,24 @@
         
         .btn-event:hover {
             background-color: #ff4081;
+        }
+        
+        /* Estilos para el icono de ubicación */
+        .venue-icon {
+            font-size: 1rem;
+            min-width: 20px;
+            text-align: center;
+            color: #ff4081;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+        }
+        
+        .venue-location {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         
         @media (max-width: 768px) {
@@ -251,7 +279,10 @@
                         <div class="event-content">
                             <h3>${event.title}</h3>
                             <p> 📅 ${formattedDate} - ${formattedTime}</p>
-                            <p> 📍 ${event.venue_name || 'Lugar por confirmar'}</p>
+                            <div class="venue-location">
+                                <span class="venue-icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <p>${event.venue_name || 'Lugar por confirmar'}</p>
+                            </div>
                             <p>${event.description ? (event.description.substring(0, 150) + (event.description.length > 150 ? '...' : '')) : 'Sin descripción'}</p>
                             <div class="event-actions"></div>
                         </div>
