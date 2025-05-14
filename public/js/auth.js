@@ -1,13 +1,16 @@
 // Script para manejar la autenticación y estado de sesión
-// Variables globales - declaradas antes de cualquier uso
-let isAuthenticated = false;
-let currentUser = null;
+// Variables globales para la autenticación
+// Las exponemos en window para que otros scripts puedan acceder a ellas
+window.isAuthenticated = false;
+window.currentUser = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Inicializar
     init();
     
     async function init() {
+        console.log('Inicializando auth.js...');
+        
         // Verificar estado de autenticación
         await checkAuth();
         
@@ -16,6 +19,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Configurar eventos
         setupEventListeners();
+        
+        // Log para depuración
+        console.log('Estado de autenticación:', { isAuthenticated: window.isAuthenticated, currentUser: window.currentUser });
     }
     
     function setupEventListeners() {
@@ -66,8 +72,8 @@ function clearLocalSession() {
     }
     
     // Actualizar variables globales
-    isAuthenticated = false;
-    currentUser = null;
+    window.isAuthenticated = false;
+    window.currentUser = null;
     
     console.log('Sesión cerrada correctamente');
     
@@ -96,20 +102,17 @@ async function checkAuth() {
             const data = await response.json();
             if (data.authenticated) {
                 // Usuario autenticado según la API
-                isAuthenticated = true;
-                currentUser = {
-                    id: data.userId,
-                    username: data.username
-                };
-                
-                // Actualizar también localStorage para mantener sincronizado
-                localStorage.setItem('currentUser', JSON.stringify({
+                window.isAuthenticated = true;
+                window.currentUser = {
                     id: data.userId,
                     username: data.username,
                     authenticated: true
-                }));
+                };
                 
-                console.log('Usuario autenticado desde API:', currentUser);
+                // Actualizar también localStorage para mantener sincronizado
+                localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
+                
+                console.log('Usuario autenticado desde API:', window.currentUser);
                 return true;
             }
         }
@@ -117,15 +120,15 @@ async function checkAuth() {
         // Si la API falla o dice que no está autenticado, verificar localStorage
         const storedUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         if (storedUser && storedUser.authenticated) {
-            isAuthenticated = true;
-            currentUser = storedUser;
-            console.log('Usuario autenticado desde localStorage:', currentUser);
+            window.isAuthenticated = true;
+            window.currentUser = storedUser;
+            console.log('Usuario autenticado desde localStorage:', window.currentUser);
             return true;
         }
         
         // No autenticado en ninguna fuente
-        isAuthenticated = false;
-        currentUser = null;
+        window.isAuthenticated = false;
+        window.currentUser = null;
         console.log('Usuario no autenticado');
         return false;
         
@@ -135,15 +138,15 @@ async function checkAuth() {
         // Verificar en localStorage como respaldo
         const storedUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         if (storedUser && storedUser.authenticated) {
-            isAuthenticated = true;
-            currentUser = storedUser;
-            console.log('Usuario autenticado desde localStorage (tras error API):', currentUser);
+            window.isAuthenticated = true;
+            window.currentUser = storedUser;
+            console.log('Usuario autenticado desde localStorage (tras error API):', window.currentUser);
             return true;
         }
         
         // No autenticado
-        isAuthenticated = false;
-        currentUser = null;
+        window.isAuthenticated = false;
+        window.currentUser = null;
         console.log('Usuario no autenticado (tras error)');
         return false;
     }
@@ -152,19 +155,19 @@ async function checkAuth() {
 // Función para actualizar la interfaz de usuario según el estado de autenticación
 function updateAuthUI() {
     // Actualizar las variables globales con la información más reciente
-    if (!currentUser) {
-        currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!window.currentUser) {
+        window.currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
     }
-    isAuthenticated = currentUser && currentUser.authenticated;
+    window.isAuthenticated = window.currentUser && window.currentUser.authenticated;
     
-    console.log('Actualizando UI con estado:', { isAuthenticated, currentUser });
+    console.log('Actualizando UI con estado:', { isAuthenticated: window.isAuthenticated, currentUser: window.currentUser });
     
     // Elementos de la interfaz de usuario
     const userInfoElement = document.getElementById('userInfo');
     const authButtonsElement = document.getElementById('authButtons');
     const usernameDisplayElement = document.getElementById('usernameDisplay');
     
-    if (isAuthenticated && currentUser) {
+    if (window.isAuthenticated && window.currentUser) {
         // Usuario autenticado: mostrar información del usuario y ocultar botones de autenticación
         if (userInfoElement) {
             userInfoElement.style.display = 'flex';
@@ -173,18 +176,16 @@ function updateAuthUI() {
             authButtonsElement.style.display = 'none';
         }
         if (usernameDisplayElement) {
-            usernameDisplayElement.textContent = currentUser.username || 'Usuario';
+            usernameDisplayElement.textContent = window.currentUser.username || 'Usuario';
         }
         
-        // Verificar si hay botón de Mi Perfil y agregarlo si no existe
-        const navLinks = document.querySelector('.nav-links');
-        if (navLinks && !document.querySelector('.nav-links a[href="perfil.html"]')) {
-            const perfilLink = document.createElement('a');
-            perfilLink.href = 'perfil.html';
-            //perfilLink.textContent = 'Mi Perfil';
-            perfilLink.classList.add('nav-link');
-            navLinks.appendChild(perfilLink);
+        // Actualizar el saludo en la barra de navegación
+        const welcomeElement = document.querySelector('.user-info span');
+        if (welcomeElement) {
+            welcomeElement.innerHTML = `Bienvenido, <span class="username" id="usernameDisplay">${window.currentUser.username}</span>`;
         }
+        
+        // Ya no añadimos el botón "Mi Perfil" aquí, ya que está incluido en el HTML
     } else {
         // Usuario no autenticado: ocultar información del usuario y mostrar botones de autenticación
         if (userInfoElement) {
@@ -194,12 +195,43 @@ function updateAuthUI() {
             authButtonsElement.style.display = 'flex';
         }
     }
+    
+    // Resaltar el enlace de la página actual en la barra de navegación
+    highlightCurrentPage();
+}
+
+// Función para resaltar el enlace de la página actual en la barra de navegación
+function highlightCurrentPage() {
+    // Obtener la ruta de la página actual
+    const currentPath = window.location.pathname;
+    const pageName = currentPath.split('/').pop();
+    
+    console.log('Página actual:', pageName);
+    
+    // Obtener todos los enlaces de la barra de navegación
+    const navLinks = document.querySelectorAll('.nav-links a');
+    
+    // Eliminar la clase 'active' de todos los enlaces
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Añadir la clase 'active' al enlace correspondiente a la página actual
+    navLinks.forEach(link => {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === pageName || 
+            (pageName === '' && linkHref === 'index.html') || 
+            (pageName === '/' && linkHref === 'index.html')) {
+            link.classList.add('active');
+            console.log('Enlace resaltado:', linkHref);
+        }
+    });
 }
 
 // Función para guardar un foro en el perfil del usuario
 window.saveForum = async function(forumId, forumName) {
     // Verificar si el usuario está autenticado
-    if (!isAuthenticated || !currentUser) {
+    if (!window.isAuthenticated || !window.currentUser) {
         // Guardar el foro pendiente para después de iniciar sesión
         localStorage.setItem('pendingForumSave', forumId);
         
@@ -216,7 +248,7 @@ window.saveForum = async function(forumId, forumName) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                userId: currentUser.id,
+                userId: window.currentUser.id,
                 forumId: forumId
             }),
             credentials: 'include'
@@ -264,14 +296,14 @@ window.handlePendingForumSave = function(params) {
             console.log('Foro guardado exitosamente:', pendingForumSave);
             
             // También intentar guardar en la base de datos si el usuario está autenticado
-            if (isAuthenticated && currentUser) {
+            if (window.isAuthenticated && window.currentUser) {
                 fetch('/api/user/save-forum', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        userId: currentUser.id,
+                        userId: window.currentUser.id,
                         forumId: pendingForumSave
                     }),
                     credentials: 'include'
