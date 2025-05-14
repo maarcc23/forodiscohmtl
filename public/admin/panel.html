@@ -200,26 +200,26 @@
         window.addEventListener('load', checkAdminStatus);
 
         function checkAdminStatus() {
-            try {
-                // Obtener información del usuario actual desde localStorage
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                
-                // Verificar si está autenticado y es admin
-                if (!currentUser || !currentUser.authenticated || currentUser.role !== 'admin') {
-                    window.location.href = '/login.html';
-                    return;
-                }
-
-                // Mostrar el nombre de usuario
-                document.getElementById('adminUsername').textContent = currentUser.username;
-                
-                // Cargar las discotecas
-                loadClubs();
-            } catch (error) {
-                console.error('Error de autenticación:', error);
-                window.location.href = '/login.html';
-            }
+    try {
+        // Obtener información del usuario actual desde localStorage
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        
+        // Verificar si está autenticado (sin verificar el rol por ahora)
+        if (!currentUser || !currentUser.authenticated) {
+            window.location.href = '/login.html';
+            return;
         }
+
+        // Mostrar el nombre de usuario
+        document.getElementById('adminUsername').textContent = currentUser.username;
+        
+        // Cargar las discotecas
+        loadClubs();
+    } catch (error) {
+        console.error('Error de autenticación:', error);
+        window.location.href = '/login.html';
+    }
+}
 
         function loadClubs() {
             try {

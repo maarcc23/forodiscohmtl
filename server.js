@@ -336,13 +336,29 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Ruta para verificar sesión
-app.get('/api/check-auth', (req, res) => {
+// Ruta para verificar sesión
+app.get('/api/check-auth', async (req, res) => {
     if (req.session.userId) {
-        res.json({
-            authenticated: true,
-            username: req.session.username,
-            userId: req.session.userId
-        });
+        try {
+            // Obtener el rol del usuario desde la base de datos
+            const [rows] = await pool.query('SELECT role FROM users WHERE id = ?', [req.session.userId]);
+            const userRole = rows.length > 0 ? rows[0].role : 'user'; // Por defecto 'user' si no se encuentra
+            
+            res.json({
+                authenticated: true,
+                username: req.session.username,
+                userId: req.session.userId,
+                role: userRole
+            });
+        } catch (error) {
+            console.error('Error al obtener rol del usuario:', error);
+            res.json({
+                authenticated: true,
+                username: req.session.username,
+                userId: req.session.userId,
+                role: 'user' // Valor por defecto en caso de error
+            });
+        }
     } else {
         res.json({
             authenticated: false

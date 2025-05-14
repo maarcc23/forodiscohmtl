@@ -106,6 +106,7 @@ async function checkAuth() {
                 window.currentUser = {
                     id: data.userId,
                     username: data.username,
+                    role: data.role || 'user',
                     authenticated: true
                 };
                 
