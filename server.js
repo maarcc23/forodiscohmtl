@@ -134,6 +134,19 @@ async function initializeDatabase() {
             )
         `);
         
+        // Crear tabla forum_members para el nuevo sistema de seguimiento
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS forum_members (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                venue_id INT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY user_venue_unique (user_id, venue_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('Tabla forum_members creada o verificada');
+        
         // Eliminar los foros de ejemplo de la tabla venues
         /*await connection.query(`
             DELETE FROM venues 
@@ -1445,7 +1458,17 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
             );
             
             if (existingFollow.length > 0) {
-                return res.status(400).json({ success: false, message: 'Ya sigues este venue' });
+                // Si ya lo sigue, simplemente devolver el contador actual
+                const [followerCountResult] = await connection.query(
+                    'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                    [venueId]
+                );
+                
+                return res.json({
+                    success: true,
+                    message: 'Ya sigues este venue',
+                    followerCount: parseInt(followerCountResult[0].count, 10)
+                });
             }
             
             // Iniciar transacción
@@ -1457,16 +1480,18 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
                 [req.session.userId, venueId]
             );
             
-            // Incrementar el contador de seguidores
-            await connection.query(
-                'UPDATE venues SET follower_count = follower_count + 1 WHERE id = ?',
+            // Calcular el contador de seguidores en tiempo real
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
                 [venueId]
             );
             
-            // Obtener el nuevo contador de seguidores
-            const [venueData] = await connection.query(
-                'SELECT follower_count FROM venues WHERE id = ?',
-                [venueId]
+            const followerCount = parseInt(followerCountResult[0].count, 10);
+            
+            // Actualizar el contador en la tabla venues para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
             );
             
             // Confirmar la transacción
@@ -1475,7 +1500,7 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
             res.json({
                 success: true,
                 message: 'Ahora sigues este venue',
-                followerCount: venueData[0].follower_count
+                followerCount: followerCount
             });
         } catch (error) {
             // Revertir la transacción en caso de error
@@ -1516,7 +1541,17 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
             );
             
             if (existingFollow.length === 0) {
-                return res.status(400).json({ success: false, message: 'No sigues este venue' });
+                // Si no lo sigue, simplemente devolver el contador actual
+                const [followerCountResult] = await connection.query(
+                    'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                    [venueId]
+                );
+                
+                return res.json({
+                    success: true,
+                    message: 'No sigues este venue',
+                    followerCount: parseInt(followerCountResult[0].count, 10)
+                });
             }
             
             // Iniciar transacción
@@ -1528,16 +1563,18 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
                 [req.session.userId, venueId]
             );
             
-            // Decrementar el contador de seguidores (asegurando que no sea negativo)
-            await connection.query(
-                'UPDATE venues SET follower_count = GREATEST(0, follower_count - 1) WHERE id = ?',
+            // Calcular el contador de seguidores en tiempo real
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
                 [venueId]
             );
             
-            // Obtener el nuevo contador de seguidores
-            const [venueData] = await connection.query(
-                'SELECT follower_count FROM venues WHERE id = ?',
-                [venueId]
+            const followerCount = parseInt(followerCountResult[0].count, 10);
+            
+            // Actualizar el contador en la tabla venues para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
             );
             
             // Confirmar la transacción
@@ -1546,7 +1583,7 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
             res.json({
                 success: true,
                 message: 'Has dejado de seguir este venue',
-                followerCount: venueData[0].follower_count
+                followerCount: followerCount
             });
         } catch (error) {
             // Revertir la transacción en caso de error
@@ -1567,11 +1604,6 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
 // Endpoint para verificar si el usuario sigue un venue
 app.get('/api/venues/:venueId/follow-status', async (req, res) => {
     try {
-        // Verificar si el usuario está autenticado
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({ success: false, message: 'No autorizado' });
-        }
-
         const venueId = req.params.venueId;
         
         if (!venueId) {
@@ -1580,15 +1612,39 @@ app.get('/api/venues/:venueId/follow-status', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Calcular el número real de seguidores con COUNT(*)
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                [venueId]
+            );
+            
+            const followerCount = parseInt(followerCountResult[0].count, 10);
+            
+            // Si el usuario no está autenticado, solo devolver el contador
+            if (!req.session || !req.session.userId) {
+                return res.json({ 
+                    success: true, 
+                    isFollowing: false,
+                    followerCount: followerCount
+                });
+            }
+            
             // Verificar si el usuario sigue este venue
             const [existingFollow] = await connection.query(
                 'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
                 [req.session.userId, venueId]
             );
             
+            // Actualizar el contador en la base de datos para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
+            );
+            
             res.json({
                 success: true,
-                isFollowing: existingFollow.length > 0
+                isFollowing: existingFollow.length > 0,
+                followerCount: followerCount
             });
         } finally {
             connection.release();
@@ -1644,13 +1700,14 @@ app.get('/api/user/forums/status/:forumId', async (req, res) => {
 app.get('/api/venues/:venueId', async (req, res) => {
     try {
         const venueId = req.params.venueId;
-
+        
         if (!venueId) {
             return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
         }
 
         const connection = await pool.getConnection();
         try {
+            // Obtener datos del venue
             const [venues] = await connection.query(
                 'SELECT * FROM venues WHERE id = ?',
                 [venueId]
@@ -1660,9 +1717,28 @@ app.get('/api/venues/:venueId', async (req, res) => {
                 return res.status(404).json({ success: false, message: 'Venue no encontrado' });
             }
             
+            const venue = venues[0];
+            
+            // Calcular el número real de seguidores con COUNT(*)
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                [venueId]
+            );
+            
+            // Actualizar el contador de seguidores en la respuesta
+            venue.follower_count = followerCountResult[0].count;
+            
+            // Si hay una discrepancia entre el contador almacenado y el real, actualizar la base de datos
+            if (venue.follower_count !== followerCountResult[0].count) {
+                await connection.query(
+                    'UPDATE venues SET follower_count = ? WHERE id = ?',
+                    [followerCountResult[0].count, venueId]
+                );
+            }
+            
             res.json({
                 success: true,
-                venue: venues[0]
+                venue: venue
             });
         } finally {
             connection.release();

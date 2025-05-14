@@ -486,10 +486,43 @@
                     document.getElementById('forumTitle').textContent = venue.name;
                     document.getElementById('forumLocation').textContent = venue.location || 'Ubicación no especificada';
                     document.getElementById('forumDescription').textContent = venue.description || 'Sin descripción';
-                    document.getElementById('forumMembers').textContent = venue.follower_count || 0;
                     
-                    // Verificar si el usuario sigue este foro
-                    checkFollowStatus();
+                    // Inicializar el contador de miembros a 0 por defecto
+                    document.getElementById('forumMembers').textContent = '0';
+                    
+                    // Obtener el estado de seguimiento y el contador actualizado
+                    try {
+                        const followStatusResponse = await fetch(`/api/venues/${currentForumId}/follow-status`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+                        
+                        const followStatusData = await followStatusResponse.json();
+                        
+                        if (followStatusData.success) {
+                            // Actualizar el contador de miembros con el valor real calculado
+                            document.getElementById('forumMembers').textContent = followStatusData.followerCount || '0';
+                            
+                            // Actualizar el estado de seguimiento
+                            isFollowing = followStatusData.isFollowing;
+                            
+                            // Actualizar el botón de seguir
+                            const followButton = document.getElementById('followButton');
+                            if (isFollowing) {
+                                followButton.innerHTML = '<i class="fas fa-heart"></i>';
+                                followButton.classList.add('active');
+                            } else {
+                                followButton.innerHTML = '<i class="far fa-heart"></i>';
+                                followButton.classList.remove('active');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error al verificar estado de seguimiento:', error);
+                        // No mostrar notificación al usuario para no interrumpir la experiencia
+                    }
                     
                     // Verificar si el usuario ha guardado este foro
                     checkSaveStatus();
@@ -894,6 +927,12 @@
             // Función para seguir/dejar de seguir un foro
             async function toggleFollow() {
                 try {
+                    // Mostrar indicador de carga en el botón
+                    const followButton = document.getElementById('followButton');
+                    const originalContent = followButton.innerHTML;
+                    followButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    followButton.disabled = true;
+                    
                     const method = isFollowing ? 'DELETE' : 'POST';
                     
                     const response = await fetch(`/api/venues/${currentForumId}/follow`, {
@@ -910,7 +949,6 @@
                         isFollowing = !isFollowing;
                         
                         // Actualizar el botón
-                        const followButton = document.getElementById('followButton');
                         if (isFollowing) {
                             followButton.innerHTML = '<i class="fas fa-heart"></i>';
                             followButton.classList.add('active');
@@ -921,14 +959,21 @@
                             showNotification('Has dejado de seguir este foro', 'success');
                         }
                         
-                        // Actualizar contador de seguidores
-                        document.getElementById('forumMembers').textContent = data.followerCount;
+                        // Actualizar contador de seguidores con el valor devuelto por el servidor
+                        if (data.followerCount !== undefined) {
+                            document.getElementById('forumMembers').textContent = data.followerCount;
+                        }
                     } else {
+                        // Restaurar el botón a su estado original
+                        followButton.innerHTML = originalContent;
                         showNotification('Error: ' + data.message, 'error');
                     }
                 } catch (error) {
                     console.error('Error al cambiar estado de seguimiento:', error);
                     showNotification('Error al procesar la solicitud', 'error');
+                } finally {
+                    // Asegurar que el botón vuelve a estar habilitado
+                    document.getElementById('followButton').disabled = false;
                 }
             }
             
