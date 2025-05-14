@@ -97,14 +97,15 @@ async function checkAuth() {
             if (data.authenticated) {
                 // Usuario autenticado según la API
                 isAuthenticated = true;
-                currentUser = data.user;
+                currentUser = {
+                    id: data.userId,
+                    username: data.username
+                };
                 
                 // Actualizar también localStorage para mantener sincronizado
                 localStorage.setItem('currentUser', JSON.stringify({
-                    id: data.user.id,
-                    username: data.user.username,
-                    email: data.user.email,
-                    role: data.user.role || 'user',
+                    id: data.userId,
+                    username: data.username,
                     authenticated: true
                 }));
                 
@@ -140,9 +141,10 @@ async function checkAuth() {
             return true;
         }
         
+        // No autenticado
         isAuthenticated = false;
         currentUser = null;
-        console.log('Usuario no autenticado (tras error API)');
+        console.log('Usuario no autenticado (tras error)');
         return false;
     }
 }

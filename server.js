@@ -340,7 +340,8 @@ app.get('/api/check-auth', (req, res) => {
     if (req.session.userId) {
         res.json({
             authenticated: true,
-            username: req.session.username
+            username: req.session.username,
+            userId: req.session.userId
         });
     } else {
         res.json({
