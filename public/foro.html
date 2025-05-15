@@ -722,17 +722,18 @@
                 console.log('ID del comentario:', comment.id);
                 console.log('Autor del comentario (user_id):', comment.user_id);
                 
-                // Convertir ambos IDs a string para comparación consistente
+                // Convertir ambos IDs a número para comparación consistente
                 let isAuthor = false;
                 if (currentUser && currentUser.id && comment.user_id) {
-                    isAuthor = String(currentUser.id) === String(comment.user_id);
+                    // Convertir ambos a número para comparación consistente
+                    isAuthor = Number(currentUser.id) === Number(comment.user_id);
+                    console.log('ID del usuario actual (como número):', Number(currentUser.id));
+                    console.log('ID del autor del comentario (como número):', Number(comment.user_id));
                 }
                 console.log('¿Es autor?', isAuthor);
                 
                 // Verificar si el usuario es administrador
-                const isAdmin = currentUser && currentUser.isAdmin === true;
-                console.log('¿Es administrador? (valor):', currentUser ? currentUser.isAdmin : 'No hay usuario');
-                console.log('¿Es administrador? (resultado final):', isAdmin);
+                const isAdmin = false; // Desactivar la funcionalidad de administrador
                 
                 // Preparar las acciones del comentario
                 let actionsHtml = `
@@ -741,21 +742,13 @@
                         <span>Responder</span>
                     </div>`;
                 
-                // Añadir botón de eliminar si el usuario es el autor o es administrador
-                if (isAuthor || isAdmin) {
+                // Añadir botón de eliminar SOLO si el usuario es el autor
+                if (isAuthor) {
                     actionsHtml += `
                    <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
                         <i class="fas fa-trash"></i>
                         <span>Eliminar</span>
                     </div>`;
-                }
-                
-                // Si es administrador pero no es el autor, añadir una indicación visual
-                if (isAdmin && !isAuthor) {
-                    actionsHtml += `
-                   <div class="admin-badge" title="Eliminando como administrador">
-                        <i class="fas fa-shield-alt"></i>
-                   </div>`;
                 }
                 
                 element.innerHTML = `
