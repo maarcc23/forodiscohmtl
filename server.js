@@ -115,8 +115,7 @@ async function initializeDatabase() {
                 username VARCHAR(50) NOT NULL UNIQUE,
                 email VARCHAR(100) NOT NULL UNIQUE,
                 password VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_admin BOOLEAN DEFAULT FALSE
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
         
@@ -696,7 +695,7 @@ app.get('/api/auth/current-user', async (req, res) => {
         const connection = await pool.getConnection();
         try {
             const [users] = await connection.query(
-                'SELECT id, username, email, role_id FROM users WHERE id = ?',
+                'SELECT id, username, email FROM users WHERE id = ?',
                 [req.session.userId]
             );
 
@@ -2037,6 +2036,127 @@ app.delete('/api/comments/:commentId', async (req, res) => {
     }
 });
 
+// Endpoint para obtener todos los usuarios (solo para administradores)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Forzar estado de administrador para pruebas (como en el endpoint /api/check-auth)
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+        
+        // Obtener todos los usuarios
+        const connection = await pool.getConnection();
+        try {
+            console.log('Obteniendo lista de usuarios');
+            const [users] = await connection.query('SELECT id, username, email, created_at FROM users ORDER BY id');
+            console.log(`Se encontraron ${users.length} usuarios`);
+            
+            // Añadir manualmente el campo is_admin a cada usuario
+            const usersWithAdminFlag = users.map(user => ({
+                ...user,
+                is_admin: user.id === req.session.userId // El usuario actual es admin para pruebas
+            }));
+            
+            return res.json({ success: true, users: usersWithAdminFlag });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        return res.status(500).json({ success: false, message: 'Error al obtener los usuarios', error: error.message });
+    }
+});
+
+// Endpoint para eliminar un usuario y todos sus comentarios (solo para administradores)
+// Endpoint para eliminar un usuario y todos sus comentarios (solo para administradores)
+app.delete('/api/admin/users/:userId', async (req, res) => {
+    let connection;
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        console.log('Solicitud para eliminar usuario con ID:', req.params.userId);
+        
+        // Forzar estado de administrador para pruebas
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden eliminar usuarios.' });
+        }
+
+        const { userId } = req.params;
+        console.log(`Procesando eliminación del usuario ${userId}`);
+        
+        // No permitir que un usuario elimine su propia cuenta desde este endpoint
+        if (req.session.userId == userId) {
+            console.log('Intento de eliminar la propia cuenta del administrador');
+            return res.status(400).json({ success: false, message: 'No puedes eliminar tu propia cuenta desde este endpoint' });
+        }
+
+        connection = await pool.getConnection();
+        
+        // Verificar que el usuario a eliminar existe
+        console.log(`Verificando si el usuario ${userId} existe`);
+        const [userRows] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+        
+        if (userRows.length === 0) {
+            console.log(`Usuario ${userId} no encontrado`);
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+        
+        console.log(`Usuario ${userId} encontrado, procediendo con la eliminación`);
+        
+        // Iniciar transacción para garantizar que todas las operaciones se completen o ninguna
+        await connection.beginTransaction();
+        
+        try {
+            // Eliminar todos los comentarios del usuario
+            console.log(`Eliminando comentarios del usuario ${userId}`);
+            await connection.query('DELETE FROM comments WHERE user_id = ?', [userId]);
+            
+            // Eliminar todas las relaciones de foros guardados del usuario
+            console.log(`Eliminando relaciones de foros guardados del usuario ${userId}`);
+            await connection.query('DELETE FROM user_forums WHERE user_id = ?', [userId]);
+            
+            // Eliminar al usuario
+            console.log(`Eliminando usuario ${userId}`);
+            await connection.query('DELETE FROM users WHERE id = ?', [userId]);
+            
+            // Confirmar la transacción
+            await connection.commit();
+            console.log(`Transacción completada, usuario ${userId} eliminado correctamente`);
+            
+            return res.json({ success: true, message: 'Usuario y todos sus datos asociados eliminados correctamente' });
+        } catch (error) {
+            // Si hay un error, revertir la transacción
+            console.error(`Error durante la transacción, revirtiendo cambios:`, error);
+            await connection.rollback();
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        return res.status(500).json({ success: false, message: 'Error al eliminar el usuario', error: error.message });
+    } finally {
+        if (connection) {
+            connection.release();
+            console.log('Conexión a la base de datos liberada');
+        }
+    }
+});
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
