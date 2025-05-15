@@ -437,7 +437,9 @@
                 }
                 
                 // Obtener las venues favoritas del usuario usando el endpoint existente
-                const response = await fetch('/api/user/venues');
+                const response = await fetch('/api/user/venues', {
+                    credentials: 'include' // Añadir credenciales para enviar cookies de sesión
+                });
                 
                 if (!response.ok) {
                     throw new Error(`Error al obtener favoritos: ${response.status}`);

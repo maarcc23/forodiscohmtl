@@ -1034,6 +1034,58 @@ app.delete('/api/user/venues/:venueId', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error al eliminar venue de favoritos' });
     }
 });
+// Endpoint para guardar una discoteca en favoritos
+app.post('/api/user/venues/:venueId', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const venueId = req.params.venueId;
+        
+        console.log(`Guardando venue ${venueId} en favoritos para el usuario ${userId}`);
+        
+        const connection = await pool.getConnection();
+        
+        try {
+            // Verificar si ya existe la relación
+            const [existing] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [userId, venueId]
+            );
+            
+            if (existing.length > 0) {
+                connection.release();
+                return res.json({
+                    success: true,
+                    message: 'La venue ya está en favoritos',
+                    alreadySaved: true
+                });
+            }
+            
+            // Insertar la relación en la tabla user_venue_favorites
+            await connection.query(
+                'INSERT INTO user_venue_favorites (user_id, venue_id) VALUES (?, ?)',
+                [userId, venueId]
+            );
+            
+            connection.release();
+            
+            return res.json({
+                success: true,
+                message: 'Venue guardada en favoritos correctamente'
+            });
+        } catch (error) {
+            connection.release();
+            console.error('Error al guardar venue en favoritos:', error);
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).json({ success: false, message: 'Error al guardar venue en favoritos' });
+    }
+});
 
 // Endpoint para obtener eventos
 app.get('/api/events', async (req, res) => {
