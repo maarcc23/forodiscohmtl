@@ -139,6 +139,41 @@
             margin-top: 1rem;
             display: none;
         }
+
+        .admin-menu {
+            margin-bottom: 2rem;
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .admin-links {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .admin-link {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #f5f5f5;
+            color: #333;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-link:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .admin-link.active {
+            background-color: #ff4b6e;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -151,8 +186,17 @@
     </nav>
 
     <div class="admin-container">
-        <h1 class="panel-title">Panel de Administración - Gestión de Discotecas</h1>
+        <h1 class="panel-title">Panel de Administración - ForoDisco</h1>
         
+        <div class="admin-menu">
+            <h2>Menú de Administración</h2>
+            <ul class="admin-links">
+                <li><a href="/admin/panel.html" class="admin-link active">Gestión de Discotecas</a></li>
+                <li><a href="/foro.html" class="admin-link">Moderar Comentarios</a></li>
+                <li><a href="/admin/usuarios.html" class="admin-link">Gestión de Usuarios</a></li>
+            </ul>
+        </div>
+
         <div class="club-form">
             <h2>Registrar Nueva Discoteca</h2>
             <form id="clubForm">
@@ -200,26 +244,36 @@
         window.addEventListener('load', checkAdminStatus);
 
         function checkAdminStatus() {
-    try {
-        // Obtener información del usuario actual desde localStorage
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        
-        // Verificar si está autenticado (sin verificar el rol por ahora)
-        if (!currentUser || !currentUser.authenticated) {
-            window.location.href = '/login.html';
-            return;
-        }
+            try {
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                console.log('Usuario actual en panel admin:', currentUser);
+                
+                // Verificar si está autenticado Y es administrador
+                if (!currentUser || !currentUser.authenticated) {
+                    console.log('Usuario no autenticado, redirigiendo a login');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                // Verificar si es administrador
+                if (!currentUser.isAdmin) {
+                    console.log('Usuario no es administrador, redirigiendo a inicio');
+                    alert('No tienes permisos de administrador para acceder a esta página');
+                    window.location.href = '/index.html';
+                    return;
+                }
 
-        // Mostrar el nombre de usuario
-        document.getElementById('adminUsername').textContent = currentUser.username;
-        
-        // Cargar las discotecas
-        loadClubs();
-    } catch (error) {
-        console.error('Error de autenticación:', error);
-        window.location.href = '/login.html';
-    }
-}
+                // Mostrar el nombre de usuario
+                document.getElementById('adminUsername').textContent = currentUser.username;
+                
+                // Cargar las discotecas
+                loadClubs();
+            } catch (error) {
+                console.error('Error de autenticación:', error);
+                window.location.href = '/login.html';
+            }
+        }
 
         function loadClubs() {
             try {

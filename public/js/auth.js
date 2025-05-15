@@ -100,13 +100,15 @@ async function checkAuth() {
         
         if (response.ok) {
             const data = await response.json();
+            console.log('Respuesta de API check-auth:', data);
+            
             if (data.authenticated) {
                 // Usuario autenticado según la API
                 window.isAuthenticated = true;
                 window.currentUser = {
                     id: data.userId,
                     username: data.username,
-                    role: data.role || 'user',
+                    isAdmin: data.isAdmin || false,
                     authenticated: true
                 };
                 
@@ -114,6 +116,7 @@ async function checkAuth() {
                 localStorage.setItem('currentUser', JSON.stringify(window.currentUser));
                 
                 console.log('Usuario autenticado desde API:', window.currentUser);
+                console.log('Información de administrador:', window.currentUser.isAdmin);
                 return true;
             }
         }
