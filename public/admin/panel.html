@@ -225,6 +225,11 @@
                     <textarea id="descripcion" name="descripcion" required></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="logo">Logo de la Discoteca</label>
+                    <input type="file" id="logo" name="logo">
+                </div>
+
                 <button type="submit" class="btn-submit">Registrar Discoteca</button>
                 <div id="errorMessage" class="error-message"></div>
                 <div id="successMessage" class="success-message"></div>
@@ -306,42 +311,38 @@
             }
         }
 
-        document.getElementById('clubForm').addEventListener('submit', (e) => {
+        document.getElementById('clubForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = {
-                id: Date.now().toString(),
-                nombre: document.getElementById('nombre').value,
-                direccion: document.getElementById('direccion').value,
-                telefono: document.getElementById('telefono').value,
-                horario: document.getElementById('horario').value,
-                descripcion: document.getElementById('descripcion').value,
-                // Añadir estos campos para compatibilidad con venues
-                name: document.getElementById('nombre').value,
-                location: document.getElementById('direccion').value,
-                contact_info: document.getElementById('telefono').value,
-                description: document.getElementById('descripcion').value,
-                follower_count: 0,
-                rating: 0
-            };
-
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
             
             try {
-                // Obtener discotecas existentes
-                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                // Crear un objeto FormData para enviar los datos incluyendo la imagen
+                const formData = new FormData();
+                formData.append('nombre', document.getElementById('nombre').value);
+                formData.append('direccion', document.getElementById('direccion').value);
+                formData.append('telefono', document.getElementById('telefono').value);
+                formData.append('horario', document.getElementById('horario').value);
+                formData.append('descripcion', document.getElementById('descripcion').value);
                 
-                // Añadir la nueva discoteca
-                clubs.push(formData);
+                // Añadir el archivo de logo si se ha seleccionado
+                const logoInput = document.getElementById('logo');
+                if (logoInput.files.length > 0) {
+                    formData.append('logo', logoInput.files[0]);
+                }
                 
-                // Guardar en localStorage
-                localStorage.setItem('clubs', JSON.stringify(clubs));
+                // Enviar los datos al servidor
+                const response = await fetch('/api/venues', {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // También guardar en venues para que aparezca en el index
-                const venues = JSON.parse(localStorage.getItem('venues') || '[]');
-                venues.push(formData);
-                localStorage.setItem('venues', JSON.stringify(venues));
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Error al registrar la discoteca');
+                }
                 
                 // Mostrar mensaje de éxito
                 successMessage.textContent = 'Discoteca registrada correctamente';
@@ -353,9 +354,10 @@
                 
                 // Recargar la lista de discotecas
                 loadClubs();
+                
             } catch (error) {
                 console.error('Error al registrar discoteca:', error);
-                errorMessage.textContent = 'Error al registrar la discoteca: ' + error.message;
+                errorMessage.textContent = error.message;
                 errorMessage.style.display = 'block';
                 successMessage.style.display = 'none';
             }

@@ -811,8 +811,6 @@
             background-color: rgba(255, 75, 110, 0.2);
         }
 
-
-
         /* Estilos para el modal de eventos */
         .events-container {
             display: flex;
@@ -972,6 +970,41 @@
         
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        /* Estilos para el botón de volver arriba */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #ff4b6e;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .back-to-top:hover {
+            background-color: #ff2952;
+            transform: translateY(-3px);
+        }
+        
+        .back-to-top i {
+            font-size: 20px;
         }
     </style>
 </head>
@@ -1875,5 +1908,33 @@ function displayEvents(events) {
 }
 </script>
 <script src="js/auth.js"></script>
+    <!-- Botón para volver arriba -->
+    <div id="backToTop" class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+    <script>
+        // Función para manejar el botón de volver arriba
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopButton = document.getElementById('backToTop');
+            
+            // Mostrar/ocultar el botón según la posición de scroll
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.add('visible');
+                } else {
+                    backToTopButton.classList.remove('visible');
+                }
+            });
+            
+            // Acción al hacer clic en el botón
+            backToTopButton.addEventListener('click', function() {
+                // Desplazamiento suave hacia arriba
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
 </html>

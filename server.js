@@ -24,14 +24,18 @@ const PORT = process.env.PORT || 3002;
 
 // Configuración de multer para almacenar las imágenes de perfil
 const profileImagesDir = path.join(__dirname, 'public', 'uploads', 'profile_images');
+const venueLogosDir = path.join(__dirname, 'public', 'uploads', 'venue_logos');
 
-// Asegurarse de que el directorio existe
+// Asegurarse de que los directorios existen
 if (!fs.existsSync(profileImagesDir)) {
     fs.mkdirSync(profileImagesDir, { recursive: true });
 }
+if (!fs.existsSync(venueLogosDir)) {
+    fs.mkdirSync(venueLogosDir, { recursive: true });
+}
 
-// Configuración de almacenamiento para multer
-const storage = multer.diskStorage({
+// Configuración de almacenamiento para imágenes de perfil
+const profileStorage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, profileImagesDir);
     },
@@ -40,6 +44,19 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname);
         cb(null, 'profile-' + uniqueSuffix + ext);
+    }
+});
+
+// Configuración de almacenamiento para logos de discotecas
+const venueLogoStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, venueLogosDir);
+    },
+    filename: function (req, file, cb) {
+        // Generar un nombre único para el logo
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'venue-' + uniqueSuffix + ext);
     }
 });
 
@@ -54,7 +71,15 @@ const fileFilter = (req, file, cb) => {
 
 // Configuración de multer
 const upload = multer({ 
-    storage: storage,
+    storage: profileStorage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    }
+});
+
+const venueLogoUpload = multer({ 
+    storage: venueLogoStorage,
     fileFilter: fileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024 // Límite de 5MB
