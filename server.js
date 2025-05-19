@@ -365,10 +365,10 @@ app.get('/api/check-auth', async (req, res) => {
         try {
             console.log('Verificando autenticación para el usuario ID:', req.session.userId);
             
-            // Forzar el estado de administrador para pruebas
+            // Solo el usuario con ID 1 será considerado administrador
             // En un entorno de producción, esto debería obtenerse de la base de datos
-            const isAdmin = true; // Forzar a true para pruebas
-            console.log('Estado de administrador forzado para pruebas:', isAdmin);
+            const isAdmin = req.session.userId === 1;
+            console.log('Estado de administrador para el usuario:', isAdmin);
             
             res.json({
                 authenticated: true,
@@ -382,7 +382,7 @@ app.get('/api/check-auth', async (req, res) => {
                 authenticated: true,
                 username: req.session.username,
                 userId: req.session.userId,
-                isAdmin: true // Forzar a true para pruebas
+                isAdmin: req.session.userId === 1 // Solo el usuario con ID 1 será administrador
             });
         }
     } else {
@@ -1998,8 +1998,12 @@ app.delete('/api/comments/:commentId', async (req, res) => {
         const commentAuthorId = commentInfo[0].user_id;
         console.log('ID del autor del comentario:', commentAuthorId);
         
-        // Solo permitir eliminar si es el autor
-        if (Number(userId) !== Number(commentAuthorId)) {
+        // Verificar si el usuario es administrador (forzado a true para pruebas)
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        // Permitir eliminar si es el autor O si es administrador
+        if (Number(userId) !== Number(commentAuthorId) && !isAdmin) {
             console.log('Usuario no autorizado para eliminar este comentario');
             return res.status(403).json({ 
                 success: false, 

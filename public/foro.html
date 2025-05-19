@@ -769,7 +769,8 @@
                 console.log('¿Es autor?', isAuthor);
                 
                 // Verificar si el usuario es administrador
-                const isAdmin = false; // Desactivar la funcionalidad de administrador
+                const isAdmin = currentUser && currentUser.isAdmin === true;
+                console.log('¿Es administrador?', isAdmin);
                 
                 // Preparar las acciones del comentario
                 let actionsHtml = `
@@ -778,12 +779,15 @@
                         <span>Responder</span>
                     </div>`;
                 
-                // Añadir botón de eliminar SOLO si el usuario es el autor
-                if (isAuthor) {
+                // Añadir botón de eliminar si el usuario es el autor O es administrador
+                if (isAuthor || isAdmin) {
+                    const deleteIcon = isAdmin && !isAuthor ? 'fa-shield-alt' : 'fa-trash';
+                    const deleteText = isAdmin && !isAuthor ? 'Moderar' : 'Eliminar';
+                    
                     actionsHtml += `
-                   <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
-                        <i class="fas fa-trash"></i>
-                        <span>Eliminar</span>
+                    <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
+                        <i class="fas ${deleteIcon}"></i>
+                        <span>${deleteText}</span>
                     </div>`;
                 }
                 
@@ -923,50 +927,39 @@
                 }
             }
             
-            // Función para eliminar un comentario (versión con URL absoluta y sin puerto en la URL)
-            function deleteComment(commentId) {
-                if (confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
-                    // Asegurarse de que el ID sea un número
-                    const id = parseInt(commentId);
-                    console.log('Iniciando eliminación del comentario ID:', id);
-                    
-                    // Construir la URL con ruta absoluta sin puerto
-                    const url = `/api/comments/${id}`;
-                    console.log('URL de la solicitud:', url);
-                    
-                    // Eliminar el comentario de la interfaz PRIMERO
-                    const commentElement = document.querySelector(`.post[data-comment-id="${id}"]`);
-                    if (commentElement) {
-                        commentElement.remove();
-                        showNotification('Comentario eliminado de la interfaz', 'success');
-                    } else {
-                        showNotification('No se pudo encontrar el comentario en la interfaz', 'warning');
-                        return; // Si no se encuentra el elemento, no continuar
+            // Función para eliminar un comentario
+            async function deleteComment(commentId) {
+                try {
+                    // Mostrar confirmación antes de eliminar
+                    if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+                        return;
                     }
                     
-                    // Luego intentar eliminarlo de la base de datos
-                    fetch(url, {
+                    console.log('Intentando eliminar comentario con ID:', commentId);
+                    
+                    const response = await fetch(`/api/comments/${commentId}`, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         credentials: 'include'
-                    })
-                    .then(response => {
-                        console.log('Estado de la respuesta:', response.status);
-                        
-                        if (response.ok) {
-                            console.log('Comentario eliminado correctamente de la base de datos');
-                            showNotification('Comentario eliminado correctamente de la base de datos', 'success');
-                        } else {
-                            console.log('Error al eliminar el comentario de la base de datos:', response.status);
-                            // No mostrar notificación de error al usuario ya que el comentario ya se eliminó de la interfaz
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al comunicarse con el servidor:', error);
-                        // No mostrar notificación de error al usuario ya que el comentario ya se eliminó de la interfaz
                     });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Eliminar el comentario de la interfaz
+                        const commentElement = document.querySelector(`.post[data-comment-id="${commentId}"]`);
+                        if (commentElement) {
+                            commentElement.remove();
+                            showNotification('Comentario eliminado correctamente', 'success');
+                        }
+                    } else {
+                        showNotification('Error al eliminar el comentario: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar comentario:', error);
+                    showNotification('Error al eliminar el comentario', 'error');
                 }
             }
             
