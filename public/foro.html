@@ -791,6 +791,15 @@
                     </div>`;
                 }
                 
+                // Añadir botón de denunciar si el usuario está autenticado y NO es el autor del comentario
+                if (currentUser && !isAuthor) {
+                    actionsHtml += `
+                    <div class="post-action report-action" onclick="reportComment(${comment.id})">
+                        <i class="fas fa-flag"></i>
+                        <span>Denunciar</span>
+                    </div>`;
+                }
+                
                 element.innerHTML = `
                     <div class="post-header">
                         <img src="${profileImageUrl}" alt="Foto de perfil" class="profile-image" onerror="this.src='${defaultProfileImage}'">
@@ -960,6 +969,41 @@
                 } catch (error) {
                     console.error('Error al eliminar comentario:', error);
                     showNotification('Error al eliminar el comentario', 'error');
+                }
+            }
+            
+            // Función para denunciar un comentario
+            async function reportComment(commentId) {
+                try {
+                    // Obtener el motivo de la denuncia mediante un prompt
+                    const motivo = prompt('¿Por qué quieres denunciar este comentario?');
+                    
+                    // Si el usuario cancela el prompt o no proporciona un motivo, cancelar la denuncia
+                    if (!motivo || motivo.trim() === '') {
+                        return;
+                    }
+                    
+                    console.log('Denunciando comentario con ID:', commentId, 'Motivo:', motivo);
+                    
+                    const response = await fetch(`/api/comments/${commentId}/denunciar`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ motivo })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Comentario denunciado correctamente. Un administrador lo revisará pronto.', 'success');
+                    } else {
+                        showNotification('Error al denunciar el comentario: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al denunciar comentario:', error);
+                    showNotification('Error al denunciar el comentario', 'error');
                 }
             }
             

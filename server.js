@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 3002;
 const profileImagesDir = path.join(__dirname, 'public', 'uploads', 'profile_images');
 const venueLogosDir = path.join(__dirname, 'public', 'uploads', 'venue_logos');
 
-// Asegurarse de que los directorios existen
+// Asegurarnos de que los directorios existen
 if (!fs.existsSync(profileImagesDir)) {
     fs.mkdirSync(profileImagesDir, { recursive: true });
 }
@@ -170,6 +170,22 @@ async function initializeDatabase() {
             )
         `);
         console.log('Tabla forum_members creada o verificada');
+        
+        // Crear tabla de denuncias de comentarios
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS denuncias (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                comment_id INT NOT NULL,
+                motivo VARCHAR(255),
+                estado ENUM('pendiente', 'revisada', 'descartada') DEFAULT 'pendiente',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY user_comment_unique (user_id, comment_id),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('Tabla denuncias creada o verificada');
         
         // Eliminar los foros de ejemplo de la tabla venues
         /*await connection.query(`
@@ -2164,6 +2180,165 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Endpoint para denunciar un comentario
+app.post('/api/comments/:commentId/denunciar', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const userId = req.session.userId;
+        const commentId = req.params.commentId;
+        const { motivo } = req.body;
+
+        console.log(`Usuario ${userId} denunciando comentario ${commentId}. Motivo: ${motivo}`);
+
+        // Validar que commentId es un número
+        if (isNaN(parseInt(commentId, 10))) {
+            return res.status(400).json({ success: false, message: 'ID de comentario inválido' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el comentario existe
+            const [comments] = await connection.query(
+                'SELECT * FROM comments WHERE id = ?',
+                [commentId]
+            );
+
+            if (comments.length === 0) {
+                return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+            }
+
+            // Verificar si el usuario ya ha denunciado este comentario
+            const [existingReports] = await connection.query(
+                'SELECT * FROM denuncias WHERE user_id = ? AND comment_id = ?',
+                [userId, commentId]
+            );
+
+            if (existingReports.length > 0) {
+                return res.status(400).json({ success: false, message: 'Ya has denunciado este comentario anteriormente' });
+            }
+
+            // Registrar la denuncia
+            await connection.query(
+                'INSERT INTO denuncias (user_id, comment_id, motivo) VALUES (?, ?, ?)',
+                [userId, commentId, motivo]
+            );
+
+            res.json({ success: true, message: 'Comentario denunciado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al denunciar comentario:', error);
+        res.status(500).json({ success: false, message: 'Error al denunciar el comentario: ' + error.message });
+    }
+});
+
+// Endpoint para obtener todas las denuncias (solo para administradores)
+app.get('/api/admin/denuncias', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (solo el usuario con ID 1)
+        const isAdmin = req.session.userId === 1;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todas las denuncias con información adicional
+            const [denuncias] = await connection.query(`
+                SELECT d.*, 
+                       u.username, 
+                       c.content as comment_content,
+                       (SELECT username FROM users WHERE id = c.user_id) as comment_author
+                FROM denuncias d
+                JOIN users u ON d.user_id = u.id
+                JOIN comments c ON d.comment_id = c.id
+                ORDER BY 
+                    CASE 
+                        WHEN d.estado = 'pendiente' THEN 1
+                        WHEN d.estado = 'revisada' THEN 2
+                        ELSE 3
+                    END,
+                    d.created_at DESC
+            `);
+            
+            return res.json({ success: true, denuncias: denuncias });
+        } catch (error) {
+            console.error('Error al obtener denuncias:', error);
+            return res.status(500).json({ success: false, message: 'Error al obtener denuncias: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al obtener denuncias:', error);
+        return res.status(500).json({ success: false, message: 'Error general al obtener denuncias: ' + error.message });
+    }
+});
+
+// Endpoint para cambiar el estado de una denuncia (solo para administradores)
+app.put('/api/admin/denuncias/:denunciaId/estado', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (solo el usuario con ID 1)
+        const isAdmin = req.session.userId === 1;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+
+        const denunciaId = req.params.denunciaId;
+        const { estado } = req.body;
+
+        // Validar que el estado sea válido
+        if (!['pendiente', 'revisada', 'descartada'].includes(estado)) {
+            return res.status(400).json({ success: false, message: 'Estado no válido' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Actualizar el estado de la denuncia
+            const [result] = await connection.query(
+                'UPDATE denuncias SET estado = ? WHERE id = ?',
+                [estado, denunciaId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Denuncia no encontrada' });
+            }
+
+            return res.json({ success: true, message: 'Estado de la denuncia actualizado correctamente' });
+        } catch (error) {
+            console.error('Error al actualizar estado de denuncia:', error);
+            return res.status(500).json({ success: false, message: 'Error al actualizar estado de denuncia: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al actualizar estado de denuncia:', error);
+        return res.status(500).json({ success: false, message: 'Error general al actualizar estado de denuncia: ' + error.message });
+    }
 });
 
 app.listen(PORT, () => {
