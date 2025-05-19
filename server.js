@@ -104,101 +104,121 @@ app.use(session({
     }
 }));
 
-// Inicializar la base de datos
+// Función para inicializar la base de datos
 async function initializeDatabase() {
-    const connection = await pool.getConnection();
     try {
-        // Crear tabla de usuarios si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) NOT NULL UNIQUE,
-                email VARCHAR(100) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Crear tabla de venues si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS venues (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                description TEXT,
-                location VARCHAR(100),
-                image_url VARCHAR(255),
-                website VARCHAR(255),
-                capacity INT,
-                members INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Crear tabla de foros guardados por usuario si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS user_forums (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                forum_id INT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_forum_unique (user_id, forum_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        
-        // Crear tabla de venues favoritas por usuario si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS user_venue_favorites (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                venue_id INT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_venue_unique (user_id, venue_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        
-        // Crear tabla forum_members para el nuevo sistema de seguimiento
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS forum_members (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                venue_id INT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_venue_unique (user_id, venue_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        console.log('Tabla forum_members creada o verificada');
-        
-        // Crear tabla de denuncias de comentarios
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS denuncias (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                comment_id INT NOT NULL,
-                motivo VARCHAR(255),
-                estado ENUM('pendiente', 'revisada', 'descartada') DEFAULT 'pendiente',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_comment_unique (user_id, comment_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
-            )
-        `);
-        console.log('Tabla denuncias creada o verificada');
-        
-        // Eliminar los foros de ejemplo de la tabla venues
-        /*await connection.query(`
-            DELETE FROM venues 
-            WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
-        `);*/
-        console.log('Foros de ejemplo eliminados de la base de datos');
-        
-        console.log('Base de datos inicializada correctamente');
+        const connection = await pool.getConnection();
+        try {
+            console.log('Inicializando base de datos...');
+            
+            // Crear tabla de usuarios si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    email VARCHAR(100) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    profile_image VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            
+            // Crear tabla de venues si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS venues (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    location VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    contact_info VARCHAR(255),
+                    logo VARCHAR(255),
+                    created_by INT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+            
+            // Verificar si la columna logo existe en la tabla venues
+            const [columns] = await connection.query(`
+                SHOW COLUMNS FROM venues LIKE 'logo'
+            `);
+            
+            // Si la columna logo no existe, añadirla
+            if (columns.length === 0) {
+                console.log('Añadiendo columna logo a la tabla venues...');
+                await connection.query(`
+                    ALTER TABLE venues ADD COLUMN logo VARCHAR(255)
+                `);
+            }
+            
+            // Crear tabla de foros guardados por usuario si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS user_forums (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    forum_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_forum_unique (user_id, forum_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            
+            // Crear tabla de venues favoritas por usuario si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS user_venue_favorites (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    venue_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_venue_unique (user_id, venue_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            
+            // Crear tabla forum_members para el nuevo sistema de seguimiento
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS forum_members (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    venue_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_venue_unique (user_id, venue_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            console.log('Tabla forum_members creada o verificada');
+            
+            // Crear tabla de denuncias de comentarios
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS denuncias (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    comment_id INT NOT NULL,
+                    motivo VARCHAR(255),
+                    estado ENUM('pendiente', 'revisada', 'descartada') DEFAULT 'pendiente',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_comment_unique (user_id, comment_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+                )
+            `);
+            console.log('Tabla denuncias creada o verificada');
+            
+            // Eliminar los foros de ejemplo de la tabla venues
+            /*await connection.query(`
+                DELETE FROM venues 
+                WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
+            `);*/
+            console.log('Foros de ejemplo eliminados de la base de datos');
+            
+            console.log('Base de datos inicializada correctamente');
+        } catch (error) {
+            console.error('Error al inicializar la base de datos:', error);
+        } finally {
+            connection.release();
+        }
     } catch (error) {
         console.error('Error al inicializar la base de datos:', error);
-    } finally {
-        connection.release();
     }
 }
 
@@ -492,13 +512,15 @@ app.get('/api/venues', async (req, res) => {
 });
 
 // Ruta para crear una nueva venue
-app.post('/api/venues', async (req, res) => {
+app.post('/api/venues', venueLogoUpload.single('logo'), async (req, res) => {
     try {
         // Verificar si el usuario es admin
         if (!req.session.userId) {
             return res.status(401).json({ success: false, message: 'No autorizado' });
         }
 
+        console.log('Datos recibidos para registro de venue:', req.body);
+        
         const { name, location, description, contact_info } = req.body;
 
         if (!name || !location) {
@@ -507,15 +529,21 @@ app.post('/api/venues', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Verificar si se ha subido un logo
+            let logoFilename = null;
+            if (req.file) {
+                logoFilename = req.file.filename;
+            }
+            
             const [result] = await connection.query(
-                'INSERT INTO venues (name, location, description, contact_info) VALUES (?, ?, ?, ?)',
-                [name, location, description, contact_info]
+                'INSERT INTO venues (name, location, description, contact_info, logo) VALUES (?, ?, ?, ?, ?)',
+                [name, location, description, contact_info, logoFilename]
             );
 
             // Crear un foro asociado a la venue
             await connection.query(
-                'INSERT INTO forums (title, description, venue_id) VALUES (?, ?, ?)',
-                [name, description, result.insertId]
+                'INSERT INTO forums (title, description, venue_id, created_by) VALUES (?, ?, ?, ?)',
+                [name, description, result.insertId, req.session.userId]
             );
 
             res.status(201).json({ success: true, message: 'Venue creada exitosamente', venueId: result.insertId });
