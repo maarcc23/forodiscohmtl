@@ -381,9 +381,9 @@ app.get('/api/check-auth', async (req, res) => {
         try {
             console.log('Verificando autenticación para el usuario ID:', req.session.userId);
             
-            // Solo el usuario con ID 1 será considerado administrador
+            // Considerar como administradores a los usuarios con ID 1 o 4
             // En un entorno de producción, esto debería obtenerse de la base de datos
-            const isAdmin = req.session.userId === 1;
+            const isAdmin = req.session.userId === 1 || req.session.userId === 4;
             console.log('Estado de administrador para el usuario:', isAdmin);
             
             res.json({
@@ -398,7 +398,7 @@ app.get('/api/check-auth', async (req, res) => {
                 authenticated: true,
                 username: req.session.username,
                 userId: req.session.userId,
-                isAdmin: req.session.userId === 1 // Solo el usuario con ID 1 será administrador
+                isAdmin: req.session.userId === 1 || req.session.userId === 4 // Considerar como administradores a los usuarios con ID 1 o 4
             });
         }
     } else {

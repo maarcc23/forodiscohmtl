@@ -782,7 +782,7 @@
                 // Añadir botón de eliminar si el usuario es el autor O es administrador
                 if (isAuthor || isAdmin) {
                     const deleteIcon = isAdmin && !isAuthor ? 'fa-shield-alt' : 'fa-trash';
-                    const deleteText = isAdmin && !isAuthor ? 'Moderar' : 'Eliminar';
+                    const deleteText = isAdmin && !isAuthor ? 'Eliminar' : 'Eliminar';
                     
                     actionsHtml += `
                     <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
@@ -791,8 +791,8 @@
                     </div>`;
                 }
                 
-                // Añadir botón de denunciar si el usuario está autenticado y NO es el autor del comentario
-                if (currentUser && !isAuthor) {
+                // Añadir botón de denunciar si el usuario está autenticado, NO es el autor y NO es administrador
+                if (currentUser && !isAuthor && !isAdmin) {
                     actionsHtml += `
                     <div class="post-action report-action" onclick="reportComment(${comment.id})">
                         <i class="fas fa-flag"></i>

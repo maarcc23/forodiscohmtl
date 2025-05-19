@@ -244,46 +244,61 @@
     </div>
 
     <script>
-        // Verificar si el usuario es admin al cargar la página
-        window.addEventListener('load', checkAdminStatus);
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAuth();
+            loadClubs();
+        });
 
-        function checkAdminStatus() {
+        // Función para verificar si el usuario es administrador
+        async function checkAdminAuth() {
             try {
-                // Obtener información del usuario actual desde localStorage
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-                console.log('Usuario actual en panel admin:', currentUser);
+                const response = await fetch('/api/check-auth', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
                 
-                // Verificar si está autenticado Y es administrador
-                if (!currentUser || !currentUser.authenticated) {
-                    console.log('Usuario no autenticado, redirigiendo a login');
-                    window.location.href = '/login.html';
-                    return;
-                }
+                const data = await response.json();
                 
-                // Verificar si es administrador
-                if (!currentUser.isAdmin) {
-                    console.log('Usuario no es administrador, redirigiendo a inicio');
+                if (!data.authenticated || !data.isAdmin) {
+                    // Redirigir a la página principal si no es administrador
                     alert('No tienes permisos de administrador para acceder a esta página');
-                    window.location.href = '/index.html';
+                    window.location.href = '../index.html';
                     return;
                 }
-
-                // Mostrar el nombre de usuario
-                document.getElementById('adminUsername').textContent = currentUser.username;
                 
-                // Cargar las discotecas
-                loadClubs();
+                // Mostrar nombre de usuario
+                document.getElementById('adminUsername').textContent = data.username;
+                
             } catch (error) {
-                console.error('Error de autenticación:', error);
-                window.location.href = '/login.html';
+                console.error('Error al verificar autenticación:', error);
+                alert('Error al verificar permisos de administrador');
+                // Redirigir a la página principal
+                window.location.href = '../index.html';
             }
         }
 
-        function loadClubs() {
+        async function loadClubs() {
             try {
-                // Obtener discotecas desde localStorage
-                const clubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+                // Obtener discotecas desde el servidor
+                const response = await fetch('/api/venues', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
                 
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar discotecas');
+                }
+                
+                const clubs = data.venues || [];
                 const clubsList = document.getElementById('clubsList');
                 clubsList.innerHTML = '';
                 
@@ -296,17 +311,37 @@
                     const clubCard = document.createElement('div');
                     clubCard.className = 'club-card';
                     clubCard.innerHTML = `
-                        <h3>${club.nombre}</h3>
-                        <p><strong>Dirección:</strong> ${club.direccion || 'No especificada'}</p>
-                        <p><strong>Teléfono:</strong> ${club.telefono || 'No especificado'}</p>
-                        <p><strong>Horario:</strong> ${club.horario || 'No especificado'}</p>
-                        <p>${club.descripcion || 'Sin descripción'}</p>
+                        <h3>${club.name}</h3>
+                        <p><strong>Dirección:</strong> ${club.location || 'No especificada'}</p>
+                        <p><strong>Descripción:</strong> ${club.description || 'Sin descripción'}</p>
                     `;
                     clubsList.appendChild(clubCard);
                 });
             } catch (error) {
                 console.error('Error al cargar discotecas:', error);
                 document.getElementById('clubsList').innerHTML = '<p>Error al cargar las discotecas: ' + error.message + '</p>';
+            }
+        }
+
+        // Función de logout que usa la API
+        async function logoutUser() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                // Independientemente de la respuesta, redirigir
+                alert('Sesión cerrada correctamente');
+                
+                // Redirigir a la página principal
+                window.location.href = '../index.html';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
             }
         }
 
@@ -360,34 +395,6 @@
                 errorMessage.style.display = 'block';
                 successMessage.style.display = 'none';
             }
-        });
-
-        // Función de logout directa
-        function logoutUser() {
-            try {
-                // Modificar el estado de autenticación
-                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                currentUser.authenticated = false;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                console.log('Sesión cerrada correctamente');
-                
-                // Mostrar notificación o alerta
-                alert('Sesión cerrada correctamente');
-                
-                // Redirigir a la página principal
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 1000);
-            } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
-            }
-        }
-
-        // Verificar autenticación al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAdminStatus();
         });
     </script>
 </body>
