@@ -1,5 +1,5 @@
 // Variables globales
-let isAuthenticated = false;
+// Nota: isAuthenticated y currentUser ya están definidas en auth.js
 let savedForums = [];
 let venues = [];
 
@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         const response = await fetch('/api/check-auth');
         const data = await response.json();
-        isAuthenticated = data.authenticated;
+        const isAuthenticated = data.authenticated;
         console.log('Estado de autenticación:', isAuthenticated);
         
         // Cargar foros guardados si el usuario está autenticado

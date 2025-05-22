@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - ForoDisco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+        .panel-title {
+            color: #ff4b6e;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
+        }
+
+        .admin-menu {
+            margin-bottom: 2rem;
+        }
+
+        .admin-links {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .admin-link {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-link:hover, .admin-link.active {
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
+        }
+
+        .users-list {
+            margin-top: 2rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table th, .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .users-table th {
+            background-color: rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+            color: #ff4b6e;
+        }
+
+        .users-table tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-delete {
+            background-color: #ff4b6e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete:hover {
+            background-color: #e63e63;
+        }
+
+        .user-role {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .role-admin {
+            background-color: #ff4b6e;
+            color: white;
+        }
+
+        .role-user {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .error-message {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: #ff4b4b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .success-message {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: #4bff4b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 2rem;
+            color: #ccc;
+        }
+
+        .confirmation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h3 {
+            color: #ff4b6e;
+            margin-top: 0;
+        }
+
+        .modal-content p {
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-confirm {
+            background-color: #ff4b6e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm:hover {
+            background-color: #e63e63;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #ff4b6e;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Admin: <span class="username" id="adminUsername"></span></span>
+            <a href="#" onclick="logoutUser()" class="btn-logout">Cerrar sesión</a>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <h1 class="panel-title">Panel de Administración - ForoDisco</h1>
+        
+        <div class="admin-menu">
+            <h2>Menú de Administración</h2>
+            <ul class="admin-links">
+                <li><a href="/admin/panel.html" class="admin-link">Gestión de Discotecas</a></li>
+                <li><a href="/admin/usuarios.html" class="admin-link active">Gestión de Usuarios</a></li>
+                <li><a href="/admin/denuncias.html" class="admin-link">Gestión de Denuncias</a></li>
+                <li><a href="/admin/delegados.html" class="admin-link">Gestión de Delegados</a></li>
+            </ul>
+        </div>
+
+        <div class="users-list">
+            <h2>Usuarios Registrados</h2>
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+            <div id="loadingUsers" class="loading">
+                <div class="spinner"></div>
+                <p>Cargando usuarios...</p>
+            </div>
+            <div id="usersTableContainer">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Fecha de registro</th>
+                            <th>Rol</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Aquí se cargarán los usuarios dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar usuario -->
+    <div id="deleteConfirmationModal" class="confirmation-modal">
+        <div class="modal-content">
+            <h3>Confirmar eliminación</h3>
+            <p>¿Estás seguro de que deseas eliminar al usuario <span id="deleteUserName"></span>?</p>
+            <p>Esta acción eliminará todos los comentarios asociados a este usuario y no se puede deshacer.</p>
+            <div class="modal-buttons">
+                <button id="cancelDeleteBtn" class="btn-cancel">Cancelar</button>
+                <button id="confirmDeleteBtn" class="btn-confirm">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentUserToDelete = null;
+
+        // Verificar si el usuario es admin al cargar la página
+        window.addEventListener('load', checkAdminStatus);
+
+        function checkAdminStatus() {
+            try {
+                // Obtener información del usuario actual desde localStorage
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                console.log('Usuario actual en panel admin:', currentUser);
+                
+                if (!currentUser || !currentUser.authenticated || !currentUser.isAdmin) {
+                    // Si no es admin, redirigir a la página principal
+                    window.location.href = '/index.html';
+                    return;
+                }
+                
+                // Mostrar el nombre de usuario del admin
+                document.getElementById('adminUsername').textContent = currentUser.username || 'Admin';
+                
+                // Cargar la lista de usuarios
+                loadUsers();
+            } catch (error) {
+                console.error('Error al verificar estado de admin:', error);
+                window.location.href = '/index.html';
+            }
+        }
+
+        // Función para cargar la lista de usuarios
+        async function loadUsers() {
+            const loadingElement = document.getElementById('loadingUsers');
+            const tableContainer = document.getElementById('usersTableContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                loadingElement.style.display = 'block';
+                tableContainer.style.display = 'none';
+                errorMessage.style.display = 'none';
+                
+                // Realizar la petición al servidor para obtener los usuarios
+                const response = await fetch('/api/admin/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar los usuarios');
+                }
+                
+                // Mostrar los usuarios en la tabla
+                displayUsers(data.users);
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error);
+                errorMessage.textContent = error.message || 'Error al cargar los usuarios';
+                errorMessage.style.display = 'block';
+                
+                // Mostrar mensaje de error en la tabla
+                const tableBody = document.getElementById('usersTableBody');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-message">
+                            No se pudieron cargar los usuarios. Por favor, intenta de nuevo más tarde.
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                loadingElement.style.display = 'none';
+                tableContainer.style.display = 'block';
+            }
+        }
+
+        // Función para mostrar los usuarios en la tabla
+        function displayUsers(users) {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '';
+            
+            if (!users || users.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-message">
+                            No hay usuarios registrados en el sistema.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Obtener el ID del usuario actual
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const currentUserId = currentUser ? currentUser.id : null;
+            
+            // Crear una fila para cada usuario
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Formatear la fecha de registro
+                const createdAt = new Date(user.created_at);
+                const formattedDate = createdAt.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Determinar si el usuario es admin
+                const roleClass = user.is_admin ? 'role-admin' : 'role-user';
+                const roleName = user.is_admin ? 'Administrador' : 'Usuario';
+                
+                // Crear el contenido de la fila
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${formattedDate}</td>
+                    <td><span class="user-role ${roleClass}">${roleName}</span></td>
+                    <td>
+                        ${user.id == currentUserId 
+                            ? '<span style="color: #888;">No se puede eliminar</span>' 
+                            : '<button class="btn-delete" data-user-id="' + user.id + '" data-user-name="' + user.username + '"><i class="fas fa-trash"></i></button>'}
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Añadir event listeners a los botones de eliminar
+            document.querySelectorAll('.btn-delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    const userName = this.getAttribute('data-user-name');
+                    showDeleteConfirmation(userId, userName);
+                });
+            });
+        }
+
+        // Función para mostrar el modal de confirmación de eliminación
+        function showDeleteConfirmation(userId, userName) {
+            currentUserToDelete = userId;
+            document.getElementById('deleteUserName').textContent = userName;
+            document.getElementById('deleteConfirmationModal').style.display = 'flex';
+        }
+
+        // Función para eliminar un usuario
+        async function deleteUser(userId) {
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                console.log(`Intentando eliminar usuario con ID: ${userId}`);
+                
+                // Realizar la petición al servidor para eliminar el usuario
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                console.log('Respuesta del servidor:', response.status, response.statusText);
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    console.error('Error al parsear la respuesta JSON:', e);
+                    throw new Error('Error en la respuesta del servidor: ' + response.status + ' ' + response.statusText);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(data?.message || `Error al eliminar el usuario (${response.status})`);
+                }
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al eliminar el usuario');
+                }
+                
+                // Mostrar mensaje de éxito
+                successMessage.textContent = 'Usuario eliminado correctamente';
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // Recargar la lista de usuarios
+                loadUsers();
+            } catch (error) {
+                console.error('Error al eliminar usuario:', error);
+                errorMessage.textContent = error.message || 'Error al eliminar el usuario';
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+        }
+
+        // Event listeners para el modal de confirmación
+        document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
+            document.getElementById('deleteConfirmationModal').style.display = 'none';
+            currentUserToDelete = null;
+        });
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (currentUserToDelete) {
+                deleteUser(currentUserToDelete);
+                document.getElementById('deleteConfirmationModal').style.display = 'none';
+                currentUserToDelete = null;
+            }
+        });
+
+        // Función para cerrar sesión
+        async function logoutUser() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                // Limpiar localStorage
+                localStorage.removeItem('currentUser');
+                
+                // Redirigir a la página principal
+                window.location.href = '/index.html';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+    </script>
+</body>
+</html>

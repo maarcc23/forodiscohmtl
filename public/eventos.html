@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eventos Próximos - ForoDiscoHTL</title>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,7 +24,11 @@
         
         header h1 {
             margin: 0;
-            color: #ff4081;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
         
         .container {
@@ -112,8 +118,12 @@
         
         .event-content h3 {
             margin: 0 0 10px 0;
-            color: #ff4081;
+            color: #ffffff;
             font-size: 1.2rem;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
         
         .event-content p {
@@ -153,6 +163,24 @@
             background-color: #ff4081;
         }
         
+        /* Estilos para el icono de ubicación */
+        .venue-icon {
+            font-size: 1rem;
+            min-width: 20px;
+            text-align: center;
+            color: #ff4081;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+        }
+        
+        .venue-location {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
         @media (max-width: 768px) {
             .events-container {
                 flex-direction: column;
@@ -175,14 +203,76 @@
     <div class="container">
         <a href="index.html" class="back-button">← Volver a la página principal</a>
         
+        <!-- Botón para crear evento (solo visible para delegados) -->
+        <div id="create-event-container" style="display: none; margin-bottom: 20px; text-align: right;">
+            <button id="btn-create-event" class="btn-event" style="background-color: #ff4081; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                <i class="fas fa-plus"></i> Crear Nuevo Evento
+            </button>
+        </div>
+        
         <div id="events-container" class="events-container">
             <!-- Las tarjetas de eventos se cargarán aquí -->
         </div>
     </div>
     
+    <!-- Modal para crear evento -->
+    <div id="create-event-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.8); padding-top: 60px;">
+        <div style="background-color: #1e1e1e; margin: 5% auto; padding: 20px; border: 1px solid #333; border-radius: 8px; width: 80%; max-width: 600px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);">
+            <span id="close-modal" style="color: #ff4081; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            <h2 style="color: #ffffff; text-shadow: 0px 0px 10px #ff4b6e, 0px 0px 20px #ff4b6e; margin-top: 0;">Crear Nuevo Evento</h2>
+            
+            <form id="event-form">
+                <div style="margin-bottom: 15px;">
+                    <label for="event-title" style="display: block; margin-bottom: 5px; color: #cccccc;">Título del Evento:</label>
+                    <input type="text" id="event-title" name="title" required style="width: 100%; padding: 10px; background-color: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="event-date" style="display: block; margin-bottom: 5px; color: #cccccc;">Fecha y Hora:</label>
+                    <input type="datetime-local" id="event-date" name="event_date" required style="width: 100%; padding: 10px; background-color: #333; border: 1px solid #444; color: white; border-radius: 4px;">
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label for="event-description" style="display: block; margin-bottom: 5px; color: #cccccc;">Descripción:</label>
+                    <textarea id="event-description" name="description" rows="4" required style="width: 100%; padding: 10px; background-color: #333; border: 1px solid #444; color: white; border-radius: 4px; resize: vertical;"></textarea>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" style="background-color: #ff4081; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Guardar Evento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <script>
         // Cargar eventos cuando la página esté lista
-        document.addEventListener('DOMContentLoaded', loadEvents);
+        document.addEventListener('DOMContentLoaded', function() {
+            checkUserAuth();
+            loadEvents();
+        });
+        
+        // Verificar si el usuario está autenticado y es delegado
+        function checkUserAuth() {
+            fetch('/api/check-auth', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.authenticated && data.isDelegate) {
+                    // Mostrar el botón de crear evento si el usuario es delegado
+                    document.getElementById('create-event-container').style.display = 'block';
+                    
+                    // Guardar información de la venue para usarla al crear eventos
+                    if (data.venueInfo) {
+                        window.venueInfo = data.venueInfo;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error al verificar autenticación:', error);
+            });
+        }
         
         // Función para cargar los eventos
         function loadEvents() {
@@ -251,7 +341,10 @@
                         <div class="event-content">
                             <h3>${event.title}</h3>
                             <p> 📅 ${formattedDate} - ${formattedTime}</p>
-                            <p> 📍 ${event.venue_name || 'Lugar por confirmar'}</p>
+                            <div class="venue-location">
+                                <span class="venue-icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <p>${event.venue_name || 'Lugar por confirmar'}</p>
+                            </div>
                             <p>${event.description ? (event.description.substring(0, 150) + (event.description.length > 150 ? '...' : '')) : 'Sin descripción'}</p>
                             <div class="event-actions"></div>
                         </div>
@@ -268,6 +361,75 @@
         function viewEventDetails(eventId) {
             alert(`Mostrando detalles del evento ${eventId}`);
         }
+        
+        // Configurar el modal de creación de eventos
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('create-event-modal');
+            const btnCreate = document.getElementById('btn-create-event');
+            const closeModal = document.getElementById('close-modal');
+            const eventForm = document.getElementById('event-form');
+            
+            // Abrir modal al hacer clic en el botón de crear
+            btnCreate.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            // Cerrar modal al hacer clic en la X
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // Cerrar modal al hacer clic fuera del contenido
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Manejar el envío del formulario
+            eventForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('event-title').value;
+                const event_date = document.getElementById('event-date').value;
+                const description = document.getElementById('event-description').value;
+                
+                // Enviar datos al servidor
+                fetch('/api/delegate/events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title,
+                        event_date,
+                        description
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al crear el evento');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Cerrar modal y recargar eventos
+                        modal.style.display = 'none';
+                        eventForm.reset();
+                        loadEvents(); // Recargar la lista de eventos
+                        alert('Evento creado exitosamente');
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al crear el evento: ' + error.message);
+                });
+            });
+        });
     </script>
 </body>
 </html>

@@ -26,8 +26,12 @@
         }
 
         .nav-brand {
-            color: #ff4b6e;
-            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+
             text-decoration: none;
             font-size: 1.5rem;
         }
@@ -101,6 +105,10 @@
         .username {
             color: #ff4b6e;
             font-weight: bold;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         /* Estilos para los modales */
@@ -323,9 +331,12 @@
 
         .search-bar button {
             padding: 0.8rem 2rem;
-            border: none;
             border-radius: 25px;
             background: #ff4b6e;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
             color: white;
             font-weight: 500;
             cursor: pointer;
@@ -478,6 +489,7 @@
             flex-direction: column;
             height: 100%;
             min-height: 250px;
+            color: white;
         }
 
         .section-card:hover {
@@ -486,9 +498,13 @@
         }
 
         .section-card h2 {
-            color: #ff4b6e;
+            color: #ffffff;
             margin-bottom: 1rem;
             font-size: 1.5rem;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         .section-card p {
@@ -500,6 +516,10 @@
 
         .section-card .btn {
             background-color: #ff4b6e;
+            text-shadow: 0px 0px 10px #ffffff,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
             color: white;
             border: none;
             padding: 0.5rem 1.5rem;
@@ -513,6 +533,7 @@
             align-self: center;
             width: 80%;
             max-width: 200px;
+            
         }
 
         .section-card .btn:hover {
@@ -756,8 +777,12 @@
         }
 
         .section-header h2 {
-            color: #ff4b6e;
+            color: #ffffff;
             margin-bottom: 0.5rem;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         .section-header p {
@@ -785,8 +810,6 @@
         .btn-secondary:hover {
             background-color: rgba(255, 75, 110, 0.2);
         }
-
-
 
         /* Estilos para el modal de eventos */
         .events-container {
@@ -948,6 +971,45 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Estilos para el botón de volver arriba */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #ff4b6e;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .back-to-top:hover {
+            background-color: #ff2952;
+            transform: translateY(-3px);
+        }
+        
+        .back-to-top i {
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
@@ -1058,7 +1120,7 @@
 
     <main>
         <div class="hero">
-            <h1>Descubre la noche en Barcelona</h1>
+            <h1>Descubre la noche en Barcelona y alrededores!</h1>
             <p>Tu guía definitiva para encontrar los mejores lugares y eventos</p>
             <div class="search-container">
                 <div class="search-bar">
@@ -1849,5 +1911,34 @@ function displayEvents(events) {
     }, 100);
 }
 </script>
+<script src="js/auth.js"></script>
+    <!-- Botón para volver arriba -->
+    <div id="backToTop" class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+    <script>
+        // Función para manejar el botón de volver arriba
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopButton = document.getElementById('backToTop');
+            
+            // Mostrar/ocultar el botón según la posición de scroll
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.add('visible');
+                } else {
+                    backToTopButton.classList.remove('visible');
+                }
+            });
+            
+            // Acción al hacer clic en el botón
+            backToTopButton.addEventListener('click', function() {
+                // Desplazamiento suave hacia arriba
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
 </html>

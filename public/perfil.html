@@ -40,7 +40,11 @@
         }
 
         .nav-brand {
-            color: #ff4b6e;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
             font-weight: bold;
             text-decoration: none;
             font-size: 1.5rem;
@@ -124,7 +128,7 @@
 
         /* Profile styles */
         .profile-card {
-            background: linear-gradient(199deg, #ff4b6e, #dfdfdf);
+            background: linear-gradient(200deg, #ff4081, #dfdfdf, #ff4081);
             border-radius: 15px;
             padding: 2rem;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -138,7 +142,8 @@
             margin-bottom: 2rem;
         }
 
-        .profile-avatar {
+        .profile-avatar-container {
+            position: relative;
             width: 100px;
             height: 100px;
             border-radius: 50%;
@@ -149,6 +154,42 @@
             font-size: 2.5rem;
             color: var(--primary-color);
             margin-right: 2rem;
+        }
+
+        .profile-avatar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .profile-avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-avatar-overlay:hover {
+            opacity: 1;
+        }
+
+        .avatar-upload-label {
+            cursor: pointer;
+            color: white;
+            font-size: 1.5rem;
         }
 
         .profile-title {
@@ -303,7 +344,15 @@
         
         <div class="profile-card">
             <div class="profile-header">
-                <div class="profile-avatar" id="profileAvatar">U</div>
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <div class="profile-avatar-overlay">
+                        <label for="profileImageInput" class="avatar-upload-label">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
+                    </div>
+                </div>
                 <div>
                     <h2 class="profile-title" id="profileTitle">Nombre de Usuario</h2>
                     <p class="profile-subtitle">Miembro desde <span id="memberSince">2023</span></p>
@@ -322,6 +371,13 @@
                     <small>El correo electrónico no se puede modificar</small>
                 </div>
                 
+                <div class="form-group">
+                    <label for="profileImage" class="form-label">Imagen de Perfil</label>
+                    <input type="file" id="profileImage" class="form-input" accept="image/*">
+                    <small>Selecciona una imagen para tu perfil (máximo 5MB)</small>
+                </div>
+                <button id="uploadImageBtn" class="btn-save" style="background-color: #4CAF50;">Subir Imagen</button>
+                <br>
                 <button id="saveProfileBtn" class="btn-save">Guardar Cambios</button>
             </div>
         </div>
@@ -339,6 +395,10 @@
             
             // Verificar autenticación
             checkAuthentication();
+            
+            // Configurar evento para subir imagen de perfil
+            document.getElementById('profileImageInput').addEventListener('change', uploadProfileImage);
+            document.getElementById('uploadImageBtn').addEventListener('click', uploadProfileImage);
         });
         
         // Función para verificar si el usuario está autenticado
@@ -379,11 +439,90 @@
                     // Fecha de registro (simulada)
                     const registerDate = new Date().getFullYear();
                     document.getElementById('memberSince').textContent = registerDate;
+                    
+                    // Cargar imagen de perfil desde el servidor
+                    fetch('/api/user/profile-image', {
+                        method: 'GET',
+                        credentials: 'include'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.profileImage) {
+                            const profileAvatar = document.getElementById('profileAvatar');
+                            profileAvatar.innerHTML = '';
+                            profileAvatar.style.backgroundImage = `url('/uploads/profile_images/${data.profileImage}')`;
+                            profileAvatar.style.backgroundSize = 'cover';
+                            profileAvatar.style.backgroundPosition = 'center';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar imagen de perfil:', error);
+                    });
                 }
             } catch (error) {
                 console.error('Error al cargar perfil:', error);
                 showNotification('Error al cargar los datos del perfil', 'error');
             }
+        }
+        
+        // Función para subir imagen de perfil
+        function uploadProfileImage() {
+            const fileInput = document.getElementById('profileImage');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('Por favor, selecciona una imagen', 'error');
+                return;
+            }
+            
+            // Validar que sea una imagen
+            if (!file.type.startsWith('image/')) {
+                showNotification('Solo se permiten archivos de imagen', 'error');
+                return;
+            }
+            
+            // Validar tamaño (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('La imagen no puede superar los 5MB', 'error');
+                return;
+            }
+            
+            // Crear FormData para enviar el archivo
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            // Mostrar notificación de carga
+            showNotification('Subiendo imagen...', 'success');
+            
+            // Enviar la imagen al servidor
+            fetch('/api/upload-profile-image', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Imagen de perfil actualizada correctamente', 'success');
+                    
+                    // Mostrar la imagen subida
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const profileAvatar = document.getElementById('profileAvatar');
+                        profileAvatar.innerHTML = '';
+                        profileAvatar.style.backgroundImage = `url('${e.target.result}')`;
+                        profileAvatar.style.backgroundSize = 'cover';
+                        profileAvatar.style.backgroundPosition = 'center';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    showNotification('Error al actualizar la imagen de perfil: ' + data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error al subir imagen:', error);
+                showNotification('Error al subir la imagen', 'error');
+            });
         }
         
         // Función para guardar los cambios del perfil

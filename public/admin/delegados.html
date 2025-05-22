@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Delegados - ForoDisco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .panel-title {
+            color: #ff4b6e;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
+        }
+
+        .admin-menu {
+            margin-bottom: 2rem;
+        }
+
+        .admin-links {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-link {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .admin-link:hover, .admin-link.active {
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
+        }
+
+        .delegate-form {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #222;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .btn-submit {
+            background-color: #ff4b6e;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff3459;
+        }
+
+        .delegates-list {
+            margin-top: 2rem;
+        }
+
+        .delegate-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .delegate-info h3 {
+            color: #ff4b6e;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .venue-name {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .delegate-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-remove {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #ff4b4b;
+            color: white;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-remove:hover {
+            background-color: #ff3434;
+        }
+
+        .error-message {
+            color: #ff4b4b;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #4bff4b;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Admin: <span class="username" id="adminUsername"></span></span>
+            <button onclick="logoutUser()" class="btn-logout">Cerrar sesión</button>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <h1 class="panel-title">Panel de Administración - Gestión de Delegados</h1>
+        
+        <div class="admin-menu">
+            <h2>Menú de Administración</h2>
+            <ul class="admin-links">
+                <li><a href="/admin/panel.html" class="admin-link">Gestión de Discotecas</a></li>
+                <li><a href="/admin/usuarios.html" class="admin-link">Gestión de Usuarios</a></li>
+                <li><a href="/admin/denuncias.html" class="admin-link">Gestión de Denuncias</a></li>
+                <li><a href="/admin/delegados.html" class="admin-link active">Gestión de Delegados</a></li>
+            </ul>
+        </div>
+        
+        <div class="delegate-form">
+            <h2>Asignar Delegado a Venue</h2>
+            <form id="delegateForm">
+                <div class="form-group">
+                    <label for="userId">Usuario</label>
+                    <select id="userId" name="userId" required>
+                        <option value="">Seleccionar usuario</option>
+                        <!-- Los usuarios se cargarán dinámicamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="venueId">Venue</label>
+                    <select id="venueId" name="venueId" required>
+                        <option value="">Seleccionar venue</option>
+                        <!-- Las venues se cargarán dinámicamente -->
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">Asignar como Delegado</button>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+            </form>
+        </div>
+        
+        <div class="delegates-list">
+            <h2>Delegados Actuales</h2>
+            <div id="delegatesList">
+                <!-- Aquí se mostrarán los delegados -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAuth();
+            loadUsers();
+            loadVenues();
+            loadDelegates();
+        });
+
+        // Función para verificar si el usuario es administrador
+        async function checkAdminAuth() {
+            try {
+                const response = await fetch('/api/check-auth', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.authenticated || !data.isAdmin) {
+                    // Redirigir a la página principal si no es administrador
+                    alert('No tienes permisos de administrador para acceder a esta página');
+                    window.location.href = '../index.html';
+                    return;
+                }
+                
+                // Mostrar nombre de usuario
+                document.getElementById('adminUsername').textContent = data.username;
+                
+            } catch (error) {
+                console.error('Error al verificar autenticación:', error);
+                alert('Error al verificar permisos de administrador');
+                // Redirigir a la página principal
+                window.location.href = '../index.html';
+            }
+        }
+
+        // Cargar usuarios para el selector
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar usuarios');
+                }
+                
+                const users = data.users || [];
+                const userSelect = document.getElementById('userId');
+                
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.username;
+                    userSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error);
+                document.getElementById('errorMessage').textContent = 'Error al cargar usuarios: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Cargar venues para el selector
+        async function loadVenues() {
+            try {
+                const response = await fetch('/api/venues', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar venues');
+                }
+                
+                const venues = data.venues || [];
+                const venueSelect = document.getElementById('venueId');
+                
+                venues.forEach(venue => {
+                    const option = document.createElement('option');
+                    option.value = venue.id;
+                    option.textContent = venue.name;
+                    venueSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error al cargar venues:', error);
+                document.getElementById('errorMessage').textContent = 'Error al cargar venues: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        // Cargar delegados actuales
+        async function loadDelegates() {
+            try {
+                const response = await fetch('/api/admin/delegates', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar delegados');
+                }
+                
+                const delegates = data.delegates || [];
+                const delegatesList = document.getElementById('delegatesList');
+                delegatesList.innerHTML = '';
+                
+                if (delegates.length === 0) {
+                    delegatesList.innerHTML = '<p>No hay delegados asignados.</p>';
+                    return;
+                }
+
+                delegates.forEach(delegate => {
+                    const delegateCard = document.createElement('div');
+                    delegateCard.className = 'delegate-card';
+                    delegateCard.innerHTML = `
+                        <div class="delegate-info">
+                            <h3>${delegate.username}</h3>
+                            <div class="venue-name">Venue: ${delegate.venue_name}</div>
+                        </div>
+                        <div class="delegate-actions">
+                            <button class="btn-remove" onclick="removeDelegate(${delegate.user_id})">Quitar como Delegado</button>
+                        </div>
+                    `;
+                    delegatesList.appendChild(delegateCard);
+                });
+            } catch (error) {
+                console.error('Error al cargar delegados:', error);
+                document.getElementById('delegatesList').innerHTML = '<p>Error al cargar los delegados: ' + error.message + '</p>';
+            }
+        }
+
+        // Función para asignar un delegado
+        document.getElementById('delegateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                const userId = document.getElementById('userId').value;
+                const venueId = document.getElementById('venueId').value;
+                
+                if (!userId || !venueId) {
+                    throw new Error('Debes seleccionar un usuario y una venue');
+                }
+                
+                const response = await fetch('/api/admin/delegates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        userId,
+                        venueId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Error al asignar delegado');
+                }
+                
+                // Mostrar mensaje de éxito
+                successMessage.textContent = 'Delegado asignado correctamente';
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // Limpiar formulario
+                document.getElementById('delegateForm').reset();
+                
+                // Recargar la lista de delegados
+                loadDelegates();
+                
+            } catch (error) {
+                console.error('Error al asignar delegado:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+        });
+
+        // Función para quitar un delegado
+        async function removeDelegate(userId) {
+            if (confirm('¿Estás seguro de que deseas quitar a este usuario como delegado?')) {
+                try {
+                    const response = await fetch(`/api/admin/delegates/${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Error al quitar delegado');
+                    }
+                    
+                    // Recargar la lista de delegados
+                    loadDelegates();
+                    
+                } catch (error) {
+                    console.error('Error al quitar delegado:', error);
+                    alert('Error al quitar delegado: ' + error.message);
+                }
+            }
+        }
+
+        // Función de logout
+        async function logoutUser() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                // Redirigir a la página principal
+                window.location.href = '../index.html';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+    </script>
+</body>
+</html>

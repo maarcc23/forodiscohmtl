@@ -40,7 +40,11 @@
         }
 
         .nav-brand {
-            color: #ff4b6e;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
             font-weight: bold;
             text-decoration: none;
             font-size: 1.5rem;
@@ -117,6 +121,10 @@
         .username {
             color: #ff4b6e;
             font-weight: bold;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         /* Estilos para el fondo */
@@ -230,9 +238,12 @@
 
         .trend-title {
             font-size: 1.5rem;
-            color: var(--text-primary);
             margin-bottom: 1rem;
             font-weight: 600;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         .trend-description {
@@ -251,7 +262,14 @@
         }
 
         .trend-location i {
-            color: var(--primary-color);
+            font-size: 1rem;
+            min-width: 20px;
+            text-align: center;
+            color: #ff4081;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         .trend-stats {
@@ -260,6 +278,11 @@
             color: var(--text-secondary);
             font-size: 0.85rem;
             margin-bottom: 1rem;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
         }
 
         /* Buttons */
@@ -373,6 +396,45 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #ff4b6e;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .back-to-top:hover {
+            background-color: #ff2952;
+            transform: translateY(-3px);
+        }
+        
+        .back-to-top i {
+            font-size: 20px;
+        }
+        
     </style>
 </head>
 <body>
@@ -744,6 +806,31 @@
                 discussionsContainer.appendChild(discussionCard);
             });
         }
+    </script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Función para manejar el botón de volver arriba
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopButton = document.getElementById('backToTop');
+            
+            // Mostrar/ocultar el botón según la posición de scroll
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopButton.classList.add('visible');
+                } else {
+                    backToTopButton.classList.remove('visible');
+                }
+            });
+            
+            // Acción al hacer clic en el botón
+            backToTopButton.addEventListener('click', function() {
+                // Desplazamiento suave hacia arriba
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+        });
     </script>
 </body>
 </html>

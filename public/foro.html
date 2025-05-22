@@ -24,8 +24,14 @@
         }
         
         header h1 {
-            margin: 0;
-            color: #ff4081;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px #ff4b6e,
+            0px 0px 20px #ff4b6e,
+            0px 0px 40px #ff4b6e,
+            0px 0px 80px #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            
         }
         
         .container {
@@ -54,6 +60,28 @@
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .forum-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .forum-title-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .venue-logo-container {
+            margin-right: 20px;
+        }
+        
+        .venue-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
         }
         
         .forum-title {
@@ -167,18 +195,24 @@
         
         .post-header {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .post-user-info {
+            display: flex;
+            flex-direction: column;
         }
         
         .post-author {
             font-weight: bold;
             color: #ff4081;
+            margin-right: 10px;
         }
         
         .post-date {
-            color: #aaa;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            color: #888;
         }
         
         .post-content {
@@ -279,6 +313,94 @@
             opacity: 1;
             transform: translateY(0);
         }
+        
+        .members-count {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 0.9rem;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #ff4081;
+        }
+        
+        .members-count i {
+            margin-right: 5px;
+            color: #ff4081;
+        }
+        
+        /* Estilos para la estructura jerárquica de comentarios */
+        .comments-thread {
+            margin-bottom: 80px;
+            position: relative;
+        }
+        
+        .comment-replies {
+            margin-left: 40px;
+            position: relative;
+        }
+        
+        /* Segundo nivel de respuestas */
+        .nested-replies {
+            margin-left: 0px;
+            margin-top: 15px;
+            position: relative;
+        }
+        
+        /* Eliminar la línea vertical principal */
+        .comments-thread::before {
+            display: none;
+        }
+        
+        /* Eliminar las líneas horizontales */
+        .reply-post::before {
+            display: none;
+        }
+        
+        /* Estilo para respuestas anidadas */
+        .nested-reply {
+            margin-left: 20px;
+            position: relative;
+        }
+        
+        /* Ajuste para el estilo existente */
+        .post {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .replying-to {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 10px;
+        }
+        
+        .reply-author {
+            font-weight: bold;
+            color: #ff4081;
+        }
+        
+        /* Estilos para la foto de perfil */
+        .profile-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+            border: 2px solid #ff4081;
+        }
+        
+        .admin-badge {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-left: 10px;
+            cursor: help;
+        }
     </style>
 </head>
 <body>
@@ -293,14 +415,21 @@
         
             <div class="forum-container">
                 <div class="forum-header">
-                    <div>
-                        <h1 id="forumTitle" class="forum-title">Cargando...</h1>
+                    <div class="forum-info">
+                        <div class="forum-title-container">
+                            <div class="venue-logo-container">
+                                <img id="venueLogo" src="images/default-logo.png" alt="Logo de la discoteca" class="venue-logo">
+                            </div>
+                            <h1 id="forumTitle" class="forum-title">Cargando...</h1>
+                        </div>
                         <div class="forum-meta">
                             <span><i class="fas fa-map-marker-alt"></i> <span id="forumLocation">Cargando...</span></span>
-                            <span><i class="fas fa-users"></i> <span id="forumMembers">0</span> - miembros</span>
                         </div>
                     </div>
                     <div class="forum-actions">
+                        <div class="members-count">
+                            <span><i class="fas fa-users"></i> <span id="forumMembers">0</span> - miembros</span>
+                        </div>
                         <button id="followButton" class="action-button">
                             <i class="far fa-heart"></i>
                         </button>
@@ -391,10 +520,52 @@
                     document.getElementById('forumTitle').textContent = venue.name;
                     document.getElementById('forumLocation').textContent = venue.location || 'Ubicación no especificada';
                     document.getElementById('forumDescription').textContent = venue.description || 'Sin descripción';
-                    document.getElementById('forumMembers').textContent = venue.follower_count || 0;
                     
-                    // Verificar si el usuario sigue este foro
-                    checkFollowStatus();
+                    // Actualizar el logo de la discoteca
+                    const logoElement = document.getElementById('venueLogo');
+                    if (venue.image_url) {
+                        logoElement.src = venue.image_url;
+                    } else {
+                        // Logo por defecto si no hay uno específico
+                        logoElement.src = 'images/default-logo.png';
+                    }
+                    
+                    // Inicializar el contador de miembros a 0 por defecto
+                    document.getElementById('forumMembers').textContent = '0';
+                    
+                    // Obtener el estado de seguimiento y el contador actualizado
+                    try {
+                        const followStatusResponse = await fetch(`/api/venues/${currentForumId}/follow-status`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+                        
+                        const followStatusData = await followStatusResponse.json();
+                        
+                        if (followStatusData.success) {
+                            // Actualizar el contador de miembros con el valor real calculado
+                            document.getElementById('forumMembers').textContent = followStatusData.followerCount || '0';
+                            
+                            // Actualizar el estado de seguimiento
+                            isFollowing = followStatusData.isFollowing;
+                            
+                            // Actualizar el botón de seguir
+                            const followButton = document.getElementById('followButton');
+                            if (isFollowing) {
+                                followButton.innerHTML = '<i class="fas fa-heart"></i>';
+                                followButton.classList.add('active');
+                            } else {
+                                followButton.innerHTML = '<i class="far fa-heart"></i>';
+                                followButton.classList.remove('active');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error al verificar estado de seguimiento:', error);
+                        // No mostrar notificación al usuario para no interrumpir la experiencia
+                    }
                     
                     // Verificar si el usuario ha guardado este foro
                     checkSaveStatus();
@@ -404,6 +575,84 @@
                 } catch (error) {
                     console.error('Error al cargar datos del foro:', error);
                     showNotification('Error al cargar datos del foro', 'error');
+                }
+            }
+            
+            // Función para cargar los comentarios del foro
+            async function loadForumComments() {
+                try {
+                    const response = await fetch(`/api/venues/${currentForumId}/comments`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    const postsContainer = document.getElementById('postsContainer');
+                    postsContainer.innerHTML = '';
+                    
+                    if (data.success && data.comments && data.comments.length > 0) {
+                        // Organizar comentarios y respuestas
+                        const mainComments = data.comments.filter(comment => !comment.parent_id);
+                        const replies = data.comments.filter(comment => comment.parent_id);
+                        
+                        // Mostrar comentarios principales con sus respuestas
+                        mainComments.forEach(comment => {
+                            // Crear un contenedor para el hilo de comentarios
+                            const threadContainer = document.createElement('div');
+                            threadContainer.className = 'comments-thread';
+                            
+                            // Añadir el comentario principal
+                            const commentElement = createCommentElement(comment, false);
+                            threadContainer.appendChild(commentElement);
+                            
+                            // Obtener respuestas para este comentario
+                            const commentReplies = replies.filter(reply => reply.parent_id === comment.id);
+                            
+                            if (commentReplies.length > 0) {
+                                // Crear contenedor para las respuestas
+                                const repliesContainer = document.createElement('div');
+                                repliesContainer.className = 'comment-replies';
+                                
+                                // Añadir cada respuesta
+                                commentReplies.forEach(reply => {
+                                    const replyElement = createCommentElement(reply, true, comment.username || 'Usuario');
+                                    replyElement.classList.add('reply-post');
+                                    repliesContainer.appendChild(replyElement);
+                                    
+                                    // Obtener respuestas anidadas para esta respuesta
+                                    const nestedReplies = replies.filter(nestedReply => nestedReply.parent_id === reply.id);
+                                    
+                                    if (nestedReplies.length > 0) {
+                                        // Crear contenedor para respuestas anidadas
+                                        const nestedRepliesContainer = document.createElement('div');
+                                        nestedRepliesContainer.className = 'nested-replies';
+                                        
+                                        // Añadir cada respuesta anidada
+                                        nestedReplies.forEach(nestedReply => {
+                                            const nestedReplyElement = createCommentElement(nestedReply, true, reply.username || 'Usuario');
+                                            nestedReplyElement.classList.add('nested-reply');
+                                            nestedRepliesContainer.appendChild(nestedReplyElement);
+                                        });
+                                        
+                                        replyElement.appendChild(nestedRepliesContainer);
+                                    }
+                                });
+                                
+                                threadContainer.appendChild(repliesContainer);
+                            }
+                            
+                            postsContainer.appendChild(threadContainer);
+                        });
+                    } else {
+                        postsContainer.innerHTML = '<p style="text-align: center; color: #888;">No hay comentarios en este foro todavía. ¡Sé el primero en comentar!</p>';
+                    }
+                } catch (error) {
+                    console.error('Error al cargar comentarios:', error);
+                    showNotification('Error al cargar comentarios', 'error');
                 }
             }
             
@@ -464,325 +713,459 @@
                     console.error('Error al verificar estado de guardado:', error);
                 }
             }
-                    // Función para cargar los comentarios del foro
-                    async function loadForumComments() {
-                        try {
-                            const response = await fetch(`/api/venues/${currentForumId}/comments`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'include'
-                            });
-                            
-                            const data = await response.json();
-                            
-                            const postsContainer = document.getElementById('postsContainer');
-                            postsContainer.innerHTML = '';
-                            
-                            if (data.success && data.comments && data.comments.length > 0) {
-                                // Organizar comentarios y respuestas
-                                const mainComments = data.comments.filter(comment => !comment.parent_id);
-                                const replies = data.comments.filter(comment => comment.parent_id);
-                                
-                                // Mostrar comentarios principales
-                                mainComments.forEach(comment => {
-                                    const commentElement = createCommentElement(comment);
-                                    postsContainer.appendChild(commentElement);
-                                    
-                                    // Añadir respuestas a este comentario
-                                    const commentReplies = replies.filter(reply => reply.parent_id === comment.id);
-                                    commentReplies.forEach(reply => {
-                                        const replyElement = createCommentElement(reply, true);
-                                        postsContainer.appendChild(replyElement);
-                                    });
-                                });
-                            } else {
-                                postsContainer.innerHTML = '<p style="text-align: center; color: #888;">No hay comentarios en este foro todavía. ¡Sé el primero en comentar!</p>';
-                            }
-                        } catch (error) {
-                            console.error('Error al cargar comentarios:', error);
-                            showNotification('Error al cargar comentarios', 'error');
-                        }
-                    }
+            
+            // Función para crear un elemento de comentario
+            function createCommentElement(comment, isReply = false, replyingTo = null) {
+                const element = document.createElement('div');
+                element.className = 'post';
+                element.dataset.commentId = comment.id;
+                
+                // Para depuración - mostrar en consola la información del comentario
+                console.log('Datos del comentario:', comment);
+                
+                let replyingToHtml = '';
+                if (isReply && replyingTo) {
+                    replyingToHtml = `<div class="replying-to">En respuesta a <span class="reply-author">${replyingTo}</span></div>`;
+                }
+                
+                // Imagen de perfil predeterminada en base64 (un avatar simple)
+                const defaultProfileImage = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iI2ZmNDA4MSIvPjxwYXRoIGQ9Ik0xMCw4NWMwLTIyLDE4LTQwLDQwLTQwczQwLDE4LDQwLDQwSDEweiIgZmlsbD0iI2ZmNDA4MSIvPjwvc3ZnPg==';
+                
+                // Verificar si el comentario tiene imagen de perfil
+                let profileImageUrl;
+                
+                if (comment.profile_image) {
+                    // Si tiene imagen de perfil, usar la ruta correcta
+                    profileImageUrl = `/uploads/profile_images/${comment.profile_image}`;
+                    console.log('Usando imagen de perfil:', profileImageUrl);
+                } else if (comment.user_image) {
+                    // Alternativa si el campo se llama user_image
+                    profileImageUrl = `/uploads/profile_images/${comment.user_image}`;
+                    console.log('Usando user_image:', profileImageUrl);
+                } else if (comment.avatar) {
+                    // Alternativa si el campo se llama avatar
+                    profileImageUrl = `/uploads/profile_images/${comment.avatar}`;
+                    console.log('Usando avatar:', profileImageUrl);
+                } else {
+                    // Si no tiene imagen, usar la predeterminada
+                    profileImageUrl = defaultProfileImage;
+                    console.log('Usando imagen predeterminada');
+                }
+                
+                // Verificar si el usuario actual es el autor del comentario
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                console.log('Usuario actual completo:', currentUser);
+                console.log('ID del comentario:', comment.id);
+                console.log('Autor del comentario (user_id):', comment.user_id);
+                
+                // Convertir ambos IDs a número para comparación consistente
+                let isAuthor = false;
+                if (currentUser && currentUser.id && comment.user_id) {
+                    // Convertir ambos a número para comparación consistente
+                    isAuthor = Number(currentUser.id) === Number(comment.user_id);
+                    console.log('ID del usuario actual (como número):', Number(currentUser.id));
+                    console.log('ID del autor del comentario (como número):', Number(comment.user_id));
+                }
+                console.log('¿Es autor?', isAuthor);
+                
+                // Verificar si el usuario es administrador
+                const isAdmin = currentUser && currentUser.isAdmin === true;
+                console.log('¿Es administrador?', isAdmin);
+                
+                // Preparar las acciones del comentario
+                let actionsHtml = `
+                    <div class="post-action reply-action">
+                        <i class="fas fa-reply"></i>
+                        <span>Responder</span>
+                    </div>`;
+                
+                // Añadir botón de eliminar si el usuario es el autor O es administrador
+                if (isAuthor || isAdmin) {
+                    const deleteIcon = isAdmin && !isAuthor ? 'fa-shield-alt' : 'fa-trash';
+                    const deleteText = isAdmin && !isAuthor ? 'Eliminar' : 'Eliminar';
                     
-                    // Función para crear un elemento de comentario
-                    function createCommentElement(comment, isReply = false) {
-                        const element = document.createElement('div');
-                        element.className = 'post';
-                        element.dataset.commentId = comment.id;
-                        
-                        if (isReply) {
-                            element.style.marginLeft = '30px';
-                            element.style.borderLeft = '3px solid #ff4b6e';
-                        }
-                        
-                        element.innerHTML = `
-                            <div class="post-header">
-                                <span class="post-author">${comment.username || 'Usuario'}</span>
-                                <span class="post-date">${formatDate(comment.created_at)}</span>
-                            </div>
-                            <div class="post-content">
-                                <p>${comment.content}</p>
-                            </div>
-                            <div class="post-actions">
-                                <div class="post-action reply-action">
-                                    <i class="fas fa-reply"></i>
-                                    <span>Responder</span>
-                                </div>
-                            </div>
-                            <div class="reply-form">
-                                <textarea placeholder="Escribe tu respuesta..."></textarea>
-                                <div class="reply-form-actions">
-                                    <button class="reply-submit">Responder</button>
-                                </div>
-                            </div>
-                        `;
-                        
-                        // Añadir event listener para mostrar/ocultar formulario de respuesta
-                        const replyAction = element.querySelector('.reply-action');
-                        const replyForm = element.querySelector('.reply-form');
-                        
-                        replyAction.addEventListener('click', () => {
-                            replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
-                        });
-                        
-                        // Añadir event listener para enviar respuesta
-                        const replySubmit = element.querySelector('.reply-submit');
-                        const replyTextarea = element.querySelector('textarea');
-                        
-                        replySubmit.addEventListener('click', () => {
-                            const content = replyTextarea.value.trim();
-                            if (content) {
-                                sendReply(comment.id, content);
-                                replyForm.style.display = 'none';
-                                replyTextarea.value = '';
-                            }
-                        });
-                        
-                        return element;
+                    actionsHtml += `
+                    <div class="post-action delete-action" onclick="deleteComment(${comment.id})">
+                        <i class="fas ${deleteIcon}"></i>
+                        <span>${deleteText}</span>
+                    </div>`;
+                }
+                
+                // Añadir botón de denunciar si el usuario está autenticado, NO es el autor y NO es administrador
+                if (currentUser && !isAuthor && !isAdmin) {
+                    actionsHtml += `
+                    <div class="post-action report-action" onclick="reportComment(${comment.id})">
+                        <i class="fas fa-flag"></i>
+                        <span>Denunciar</span>
+                    </div>`;
+                }
+                
+                element.innerHTML = `
+                    <div class="post-header">
+                        <img src="${profileImageUrl}" alt="Foto de perfil" class="profile-image" onerror="this.src='${defaultProfileImage}'">
+                        <div class="post-user-info">
+                            <span class="post-author">${comment.username || 'Usuario'}</span>
+                            <span class="post-date">${formatDate(comment.created_at)}</span>
+                        </div>
+                    </div>
+                    ${replyingToHtml}
+                    <div class="post-content">
+                        <p>${comment.content}</p>
+                    </div>
+                    <div class="post-actions">
+                        ${actionsHtml}
+                    </div>
+                    <div class="reply-form">
+                        <textarea placeholder="Escribe tu respuesta..."></textarea>
+                        <div class="reply-form-actions">
+                            <button class="reply-submit">Responder</button>
+                        </div>
+                    </div>
+                `;
+                
+                // Añadir event listener para mostrar/ocultar formulario de respuesta
+                const replyAction = element.querySelector('.reply-action');
+                const replyForm = element.querySelector('.reply-form');
+                
+                replyAction.addEventListener('click', () => {
+                    replyForm.style.display = replyForm.style.display === 'block' ? 'none' : 'block';
+                });
+                
+                // Añadir event listener para enviar respuesta
+                const replySubmit = element.querySelector('.reply-submit');
+                const replyTextarea = element.querySelector('textarea');
+                
+                replySubmit.addEventListener('click', () => {
+                    const content = replyTextarea.value.trim();
+                    if (content) {
+                        sendReply(comment.id, content, comment.username || 'Usuario');
+                        replyForm.style.display = 'none';
+                        replyTextarea.value = '';
                     }
-                    
-                    // Función para enviar un comentario
-                    async function sendComment(content) {
-                        try {
-                            const response = await fetch('/api/venues/comments', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'include',
-                                body: JSON.stringify({
-                                    venueId: currentForumId,
-                                    content: content
-                                })
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                showNotification('Comentario publicado correctamente', 'success');
-                                
-                                // Añadir el nuevo comentario a la UI sin recargar
-                                const postsContainer = document.getElementById('postsContainer');
-                                
-                                // Si no hay comentarios, limpiar el mensaje
-                                if (postsContainer.querySelector('p')) {
-                                    postsContainer.innerHTML = '';
-                                }
-                                
-                                const commentElement = createCommentElement(data.comment);
-                                postsContainer.insertBefore(commentElement, postsContainer.firstChild);
-                            } else {
-                                showNotification('Error al publicar comentario: ' + data.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error al enviar comentario:', error);
-                            showNotification('Error al publicar comentario', 'error');
-                        }
-                    }
-                    
-                    // Función para enviar una respuesta
-                    async function sendReply(parentId, content) {
-                        try {
-                            const response = await fetch('/api/venues/comments/reply', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'include',
-                                body: JSON.stringify({
-                                    venueId: currentForumId,
-                                    parentId: parentId,
-                                    content: content
-                                })
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                showNotification('Respuesta publicada correctamente', 'success');
-                                
-                                // Añadir la nueva respuesta a la UI sin recargar
-                                const parentComment = document.querySelector(`.post[data-comment-id="${parentId}"]`);
-                                const replyElement = createCommentElement(data.comment, true);
-                                parentComment.parentNode.insertBefore(replyElement, parentComment.nextSibling);
-                            } else {
-                                showNotification('Error al publicar respuesta: ' + data.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error al enviar respuesta:', error);
-                            showNotification('Error al publicar respuesta', 'error');
-                        }
-                    }
-                    
-                    // Función para seguir/dejar de seguir un foro
-                    async function toggleFollow() {
-                        try {
-                            const method = isFollowing ? 'DELETE' : 'POST';
-                            
-                            const response = await fetch(`/api/venues/${currentForumId}/follow`, {
-                                method: method,
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'include'
-                            });
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                isFollowing = !isFollowing;
-                                
-                                // Actualizar el botón
-                                const followButton = document.getElementById('followButton');
-                                if (isFollowing) {
-                                    followButton.innerHTML = '<i class="fas fa-heart"></i>';
-                                    followButton.classList.add('active');
-                                    showNotification('Ahora sigues este foro', 'success');
-                                } else {
-                                    followButton.innerHTML = '<i class="far fa-heart"></i>';
-                                    followButton.classList.remove('active');
-                                    showNotification('Has dejado de seguir este foro', 'success');
-                                }
-                                
-                                // Actualizar contador de seguidores
-                                document.getElementById('forumMembers').textContent = data.followerCount;
-                            } else {
-                                showNotification('Error: ' + data.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error al cambiar estado de seguimiento:', error);
-                            showNotification('Error al procesar la solicitud', 'error');
-                        }
-                    }
-                    
-                    // Función para guardar/eliminar un foro
-                    async function toggleSave() {
-                        try {
-                            let response;
-                            
-                            if (isSaved) {
-                                response = await fetch(`/api/user/forums/${currentForumId}`, {
-                                    method: 'DELETE',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    credentials: 'include'
-                                });
-                            } else {
-                                response = await fetch('/api/user/forums', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    credentials: 'include',
-                                    body: JSON.stringify({
-                                        forumId: currentForumId
-                                    })
-                                });
-                            }
-                            
-                            const data = await response.json();
-                            
-                            if (data.success) {
-                                isSaved = !isSaved;
-                                
-                                // Actualizar el botón
-                                const saveButton = document.getElementById('saveButton');
-                                if (isSaved) {
-                                    saveButton.innerHTML = '<i class="fas fa-bookmark"></i> Guardado';
-                                    saveButton.classList.add('active');
-                                    showNotification('Foro guardado correctamente', 'success');
-                                } else {
-                                    saveButton.innerHTML = '<i class="far fa-bookmark"></i> Guardar';
-                                    saveButton.classList.remove('active');
-                                    showNotification('Foro eliminado de guardados', 'success');
-                                }
-                            } else {
-                                showNotification('Error: ' + data.message, 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error al cambiar estado de guardado:', error);
-                            showNotification('Error al procesar la solicitud', 'error');
-                        }
-                    }
-                    
-                    // Event listeners
-                    document.addEventListener('DOMContentLoaded', () => {
-                        // Cargar datos del foro
-                        loadForumData();
-                        
-                        // Event listener para enviar comentario
-                        document.getElementById('submitPost').addEventListener('click', () => {
-                            const content = document.getElementById('newPostContent').value.trim();
-                            if (content) {
-                                sendComment(content);
-                                document.getElementById('newPostContent').value = '';
-                            }
-                        });
-                        
-                        // Event listener para seguir/dejar de seguir
-                        document.getElementById('followButton').addEventListener('click', toggleFollow);
-                        
-                        // Event listener para guardar/eliminar
-                        document.getElementById('saveButton').addEventListener('click', toggleSave);
-                        
-                        // Event listener para cerrar sesión
-                        document.getElementById('logout-btn').addEventListener('click', async () => {
-                            try {
-                                const response = await fetch('/api/logout', {
-                                    method: 'POST',
-                                    credentials: 'include'
-                                });
-                                
-                                const data = await response.json();
-                                
-                                if (data.success) {
-                                    window.location.href = 'login.html';
-                                }
-                            } catch (error) {
-                                console.error('Error al cerrar sesión:', error);
-                            }
-                        });
-                        
-                        // Cargar nombre de usuario
-                        fetch('/api/check-auth', {
-                            method: 'GET',
-                            credentials: 'include'
+                });
+                
+                return element;
+            }
+            
+            // Función para enviar un comentario
+            async function sendComment(content) {
+                try {
+                    const response = await fetch('/api/venues/comments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            venueId: currentForumId,
+                            content: content
                         })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.authenticated) {
-                                document.getElementById('username').textContent = data.username;
-                            } else {
-                                window.location.href = 'login.html';
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error al verificar autenticación:', error);
-                        });
                     });
-                </script>
-            </body>
-            </html>
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Comentario publicado correctamente', 'success');
+                        
+                        // Añadir el nuevo comentario a la UI sin recargar
+                        const postsContainer = document.getElementById('postsContainer');
+                        
+                        // Si no hay comentarios, limpiar el mensaje
+                        if (postsContainer.querySelector('p')) {
+                            postsContainer.innerHTML = '';
+                        }
+                        
+                        const commentElement = createCommentElement(data.comment);
+                        postsContainer.insertBefore(commentElement, postsContainer.firstChild);
+                    } else {
+                        showNotification('Error al publicar comentario: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al enviar comentario:', error);
+                    showNotification('Error al publicar comentario', 'error');
+                }
+            }
+            
+            // Función para enviar una respuesta
+            async function sendReply(parentId, content, replyingTo) {
+                try {
+                    const response = await fetch('/api/venues/comments/reply', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            venueId: currentForumId,
+                            parentId: parentId,
+                            content: content
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Respuesta publicada correctamente', 'success');
+                        
+                        // Añadir la nueva respuesta a la UI sin recargar
+                        const parentComment = document.querySelector(`.post[data-comment-id="${parentId}"]`);
+                        const threadContainer = parentComment.closest('.comments-thread');
+                        
+                        // Crear el elemento de respuesta
+                        const replyElement = createCommentElement(data.comment, true, replyingTo);
+                        replyElement.classList.add('reply-post');
+                        
+                        // Buscar si ya existe un contenedor de respuestas
+                        let repliesContainer = threadContainer.querySelector('.comment-replies');
+                        
+                        if (!repliesContainer) {
+                            // Si no existe, crear uno nuevo
+                            repliesContainer = document.createElement('div');
+                            repliesContainer.className = 'comment-replies';
+                            threadContainer.appendChild(repliesContainer);
+                        }
+                        
+                        // Añadir la respuesta al contenedor
+                        repliesContainer.appendChild(replyElement);
+                    } else {
+                        showNotification('Error al publicar respuesta: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al enviar respuesta:', error);
+                    showNotification('Error al publicar respuesta', 'error');
+                }
+            }
+            
+            // Función para eliminar un comentario
+            async function deleteComment(commentId) {
+                try {
+                    // Mostrar confirmación antes de eliminar
+                    if (!confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+                        return;
+                    }
+                    
+                    console.log('Intentando eliminar comentario con ID:', commentId);
+                    
+                    const response = await fetch(`/api/comments/${commentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Eliminar el comentario de la interfaz
+                        const commentElement = document.querySelector(`.post[data-comment-id="${commentId}"]`);
+                        if (commentElement) {
+                            commentElement.remove();
+                            showNotification('Comentario eliminado correctamente', 'success');
+                        }
+                    } else {
+                        showNotification('Error al eliminar el comentario: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al eliminar comentario:', error);
+                    showNotification('Error al eliminar el comentario', 'error');
+                }
+            }
+            
+            // Función para denunciar un comentario
+            async function reportComment(commentId) {
+                try {
+                    // Obtener el motivo de la denuncia mediante un prompt
+                    const motivo = prompt('¿Por qué quieres denunciar este comentario?');
+                    
+                    // Si el usuario cancela el prompt o no proporciona un motivo, cancelar la denuncia
+                    if (!motivo || motivo.trim() === '') {
+                        return;
+                    }
+                    
+                    console.log('Denunciando comentario con ID:', commentId, 'Motivo:', motivo);
+                    
+                    const response = await fetch(`/api/comments/${commentId}/denunciar`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ motivo })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Comentario denunciado correctamente. Un administrador lo revisará pronto.', 'success');
+                    } else {
+                        showNotification('Error al denunciar el comentario: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al denunciar comentario:', error);
+                    showNotification('Error al denunciar el comentario', 'error');
+                }
+            }
+            
+            // Función para seguir/dejar de seguir un foro
+            async function toggleFollow() {
+                try {
+                    // Mostrar indicador de carga en el botón
+                    const followButton = document.getElementById('followButton');
+                    const originalContent = followButton.innerHTML;
+                    followButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    followButton.disabled = true;
+                    
+                    const method = isFollowing ? 'DELETE' : 'POST';
+                    
+                    const response = await fetch(`/api/venues/${currentForumId}/follow`, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        isFollowing = !isFollowing;
+                        
+                        // Actualizar el botón
+                        if (isFollowing) {
+                            followButton.innerHTML = '<i class="fas fa-heart"></i>';
+                            followButton.classList.add('active');
+                            showNotification('Ahora sigues este foro', 'success');
+                        } else {
+                            followButton.innerHTML = '<i class="far fa-heart"></i>';
+                            followButton.classList.remove('active');
+                            showNotification('Has dejado de seguir este foro', 'success');
+                        }
+                        
+                        // Actualizar contador de seguidores con el valor devuelto por el servidor
+                        if (data.followerCount !== undefined) {
+                            document.getElementById('forumMembers').textContent = data.followerCount;
+                        }
+                    } else {
+                        // Restaurar el botón a su estado original
+                        followButton.innerHTML = originalContent;
+                        showNotification('Error: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al cambiar estado de seguimiento:', error);
+                    showNotification('Error al procesar la solicitud', 'error');
+                } finally {
+                    // Asegurar que el botón vuelve a estar habilitado
+                    document.getElementById('followButton').disabled = false;
+                }
+            }
+            
+            // Función para guardar/eliminar un foro
+            async function toggleSave() {
+                try {
+                    let response;
+                    
+                    if (isSaved) {
+                        response = await fetch(`/api/user/forums/${currentForumId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+                    } else {
+                        response = await fetch('/api/user/forums', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                forumId: currentForumId
+                            })
+                        });
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        isSaved = !isSaved;
+                        
+                        // Actualizar el botón
+                        const saveButton = document.getElementById('saveButton');
+                        if (isSaved) {
+                            saveButton.innerHTML = '<i class="fas fa-bookmark"></i> Guardado';
+                            saveButton.classList.add('active');
+                            showNotification('Foro guardado correctamente', 'success');
+                        } else {
+                            saveButton.innerHTML = '<i class="far fa-bookmark"></i> Guardar';
+                            saveButton.classList.remove('active');
+                            showNotification('Foro eliminado de guardados', 'success');
+                        }
+                    } else {
+                        showNotification('Error: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error al cambiar estado de guardado:', error);
+                    showNotification('Error al procesar la solicitud', 'error');
+                }
+            }
+            
+            // Event listeners
+            document.addEventListener('DOMContentLoaded', () => {
+                // Cargar datos del foro
+                loadForumData();
+                
+                // Event listener para enviar comentario
+                document.getElementById('submitPost').addEventListener('click', () => {
+                    const content = document.getElementById('newPostContent').value.trim();
+                    if (content) {
+                        sendComment(content);
+                        document.getElementById('newPostContent').value = '';
+                    }
+                });
+                
+                // Event listener para seguir/dejar de seguir
+                document.getElementById('followButton').addEventListener('click', toggleFollow);
+                
+                // Event listener para guardar/eliminar
+                document.getElementById('saveButton').addEventListener('click', toggleSave);
+                
+                // Event listener para cerrar sesión
+                document.getElementById('logout-btn').addEventListener('click', async () => {
+                    try {
+                        const response = await fetch('/api/logout', {
+                            method: 'POST',
+                            credentials: 'include'
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            window.location.href = 'login.html';
+                        }
+                    } catch (error) {
+                        console.error('Error al cerrar sesión:', error);
+                    }
+                });
+                
+                // Cargar nombre de usuario
+                fetch('/api/check-auth', {
+                    method: 'GET',
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        document.getElementById('username').textContent = data.username;
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al verificar autenticación:', error);
+                });
+            });
+        </script>
+    </body>
+</html>

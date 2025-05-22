@@ -4,9 +4,8 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const mysql = require('mysql2/promise');
-
-const app = express();
-const PORT = process.env.PORT || 3002;
+const multer = require('multer');
+const fs = require('fs');
 
 // Configuración de la base de datos
 const dbConfig = {
@@ -20,6 +19,73 @@ const dbConfig = {
 const pool = mysql.createPool(dbConfig);
 
 // Middleware
+const app = express();
+const PORT = process.env.PORT || 3002;
+
+// Configuración de multer para almacenar las imágenes de perfil
+const profileImagesDir = path.join(__dirname, 'public', 'uploads', 'profile_images');
+const venueLogosDir = path.join(__dirname, 'public', 'uploads', 'venue_logos');
+
+// Asegurarnos de que los directorios existen
+if (!fs.existsSync(profileImagesDir)) {
+    fs.mkdirSync(profileImagesDir, { recursive: true });
+}
+if (!fs.existsSync(venueLogosDir)) {
+    fs.mkdirSync(venueLogosDir, { recursive: true });
+}
+
+// Configuración de almacenamiento para imágenes de perfil
+const profileStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, profileImagesDir);
+    },
+    filename: function (req, file, cb) {
+        // Generar un nombre único para la imagen
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'profile-' + uniqueSuffix + ext);
+    }
+});
+
+// Configuración de almacenamiento para logos de discotecas
+const venueLogoStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, venueLogosDir);
+    },
+    filename: function (req, file, cb) {
+        // Generar un nombre único para el logo
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'venue-' + uniqueSuffix + ext);
+    }
+});
+
+// Filtro para aceptar solo imágenes
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Solo se permiten imágenes'), false);
+    }
+};
+
+// Configuración de multer
+const upload = multer({ 
+    storage: profileStorage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    }
+});
+
+const venueLogoUpload = multer({ 
+    storage: venueLogoStorage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // Límite de 5MB
+    }
+});
+
 app.use(express.json());
 app.use(express.static('public'));
 app.use(cors({
@@ -38,73 +104,121 @@ app.use(session({
     }
 }));
 
-// Inicializar la base de datos
+// Función para inicializar la base de datos
 async function initializeDatabase() {
-    const connection = await pool.getConnection();
     try {
-        // Crear tabla de usuarios si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) NOT NULL UNIQUE,
-                email VARCHAR(100) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_admin BOOLEAN DEFAULT FALSE
-            )
-        `);
-        
-        // Crear tabla de venues si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS venues (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                description TEXT,
-                location VARCHAR(100),
-                image_url VARCHAR(255),
-                website VARCHAR(255),
-                capacity INT,
-                members INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Crear tabla de foros guardados por usuario si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS user_forums (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                forum_id INT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_forum_unique (user_id, forum_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        
-        // Crear tabla de venues favoritas por usuario si no existe
-        await connection.query(`
-            CREATE TABLE IF NOT EXISTS user_venue_favorites (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                venue_id INT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY user_venue_unique (user_id, venue_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        `);
-        
-        // Eliminar los foros de ejemplo de la tabla venues
-        /*await connection.query(`
-            DELETE FROM venues 
-            WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
-        `);*/
-        console.log('Foros de ejemplo eliminados de la base de datos');
-        
-        console.log('Base de datos inicializada correctamente');
+        const connection = await pool.getConnection();
+        try {
+            console.log('Inicializando base de datos...');
+            
+            // Crear tabla de usuarios si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) NOT NULL UNIQUE,
+                    email VARCHAR(100) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    profile_image VARCHAR(255),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            
+            // Crear tabla de venues si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS venues (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    location VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    contact_info VARCHAR(255),
+                    logo VARCHAR(255),
+                    created_by INT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+            
+            // Verificar si la columna logo existe en la tabla venues
+            const [columns] = await connection.query(`
+                SHOW COLUMNS FROM venues LIKE 'logo'
+            `);
+            
+            // Si la columna logo no existe, añadirla
+            if (columns.length === 0) {
+                console.log('Añadiendo columna logo a la tabla venues...');
+                await connection.query(`
+                    ALTER TABLE venues ADD COLUMN logo VARCHAR(255)
+                `);
+            }
+            
+            // Crear tabla de foros guardados por usuario si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS user_forums (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    forum_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_forum_unique (user_id, forum_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            
+            // Crear tabla de venues favoritas por usuario si no existe
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS user_venue_favorites (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    venue_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_venue_unique (user_id, venue_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            
+            // Crear tabla forum_members para el nuevo sistema de seguimiento
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS forum_members (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    venue_id INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_venue_unique (user_id, venue_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            console.log('Tabla forum_members creada o verificada');
+            
+            // Crear tabla de denuncias de comentarios
+            await connection.query(`
+                CREATE TABLE IF NOT EXISTS denuncias (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    comment_id INT NOT NULL,
+                    motivo VARCHAR(255),
+                    estado ENUM('pendiente', 'revisada', 'descartada') DEFAULT 'pendiente',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY user_comment_unique (user_id, comment_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+                )
+            `);
+            console.log('Tabla denuncias creada o verificada');
+            
+            // Eliminar los foros de ejemplo de la tabla venues
+            /*await connection.query(`
+                DELETE FROM venues 
+                WHERE name IN ('Opium Barcelona', 'Pacha Barcelona', 'Razzmatazz', 'Sala Apolo', 'Shoko Barcelona')
+            `);*/
+            console.log('Foros de ejemplo eliminados de la base de datos');
+            
+            console.log('Base de datos inicializada correctamente');
+        } catch (error) {
+            console.error('Error al inicializar la base de datos:', error);
+        } finally {
+            connection.release();
+        }
     } catch (error) {
         console.error('Error al inicializar la base de datos:', error);
-    } finally {
-        connection.release();
     }
 }
 
@@ -122,8 +236,44 @@ async function updateDatabaseStructure() {
             await connection.query('ALTER TABLE venues ADD COLUMN follower_count INT DEFAULT 0');
             console.log('Columna follower_count agregada a la tabla venues');
         }
-    
         
+        // Verificar si la columna logo existe en la tabla venues
+        const [logoColumns] = await connection.query('SHOW COLUMNS FROM venues LIKE "logo"');
+        
+        // Si la columna logo no existe, agregarla
+        if (logoColumns.length === 0) {
+            await connection.query('ALTER TABLE venues ADD COLUMN logo VARCHAR(255)');
+            console.log('Columna logo agregada a la tabla venues');
+        }
+        
+        // Verificar si la columna contact_info existe en la tabla venues
+        const [contactColumns] = await connection.query('SHOW COLUMNS FROM venues LIKE "contact_info"');
+        
+        // Si la columna contact_info no existe, agregarla
+        if (contactColumns.length === 0) {
+            await connection.query('ALTER TABLE venues ADD COLUMN contact_info VARCHAR(255)');
+            console.log('Columna contact_info agregada a la tabla venues');
+        }
+        
+        // Verificar si la columna role existe en la tabla users
+        const [roleColumns] = await connection.query('SHOW COLUMNS FROM users LIKE "role"');
+        
+        // Si la columna role no existe, agregarla
+        if (roleColumns.length === 0) {
+            await connection.query('ALTER TABLE users ADD COLUMN role ENUM("user", "admin", "delegate") DEFAULT "user"');
+            console.log('Columna role agregada a la tabla users');
+        }
+        
+        // Verificar si la columna venue_id existe en la tabla users
+        const [venueIdColumns] = await connection.query('SHOW COLUMNS FROM users LIKE "venue_id"');
+        
+        // Si la columna venue_id no existe, agregarla
+        if (venueIdColumns.length === 0) {
+            await connection.query('ALTER TABLE users ADD COLUMN venue_id INT NULL');
+            await connection.query('ALTER TABLE users ADD CONSTRAINT fk_user_venue FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL');
+            console.log('Columna venue_id y foreign key agregadas a la tabla users');
+        }
+    
         // Crear la tabla comments con la estructura correcta
         await connection.query(`
             CREATE TABLE IF NOT EXISTS comments (
@@ -282,12 +432,60 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Ruta para verificar sesión
-app.get('/api/check-auth', (req, res) => {
+app.get('/api/check-auth', async (req, res) => {
     if (req.session.userId) {
-        res.json({
-            authenticated: true,
-            username: req.session.username
-        });
+        try {
+            console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+            
+            // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+            const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+            console.log('Estado de administrador:', isAdmin);
+            
+            // Verificar si el usuario es delegado y obtener información de su venue
+            const connection = await pool.getConnection();
+            try {
+                const [users] = await connection.query(
+                    'SELECT role, venue_id FROM users WHERE id = ?',
+                    [req.session.userId]
+                );
+                
+                let isDelegate = false;
+                let venueInfo = null;
+                
+                if (users.length > 0 && users[0].role === 'delegate' && users[0].venue_id) {
+                    isDelegate = true;
+                    
+                    // Obtener información de la venue asociada
+                    const [venues] = await connection.query(
+                        'SELECT id, name FROM venues WHERE id = ?',
+                        [users[0].venue_id]
+                    );
+                    
+                    if (venues.length > 0) {
+                        venueInfo = venues[0];
+                    }
+                }
+                
+                res.json({
+                    authenticated: true,
+                    username: req.session.username,
+                    userId: req.session.userId,
+                    isAdmin: isAdmin,
+                    isDelegate: isDelegate,
+                    venueInfo: venueInfo
+                });
+            } finally {
+                connection.release();
+            }
+        } catch (error) {
+            console.error('Error al verificar autenticación:', error);
+            res.json({
+                authenticated: true,
+                username: req.session.username,
+                userId: req.session.userId,
+                isAdmin: req.session.userId === 1 || req.session.userId === 4 // Los usuarios con ID 1 o 4 son admin
+            });
+        }
     } else {
         res.json({
             authenticated: false
@@ -379,13 +577,15 @@ app.get('/api/venues', async (req, res) => {
 });
 
 // Ruta para crear una nueva venue
-app.post('/api/venues', async (req, res) => {
+app.post('/api/venues', venueLogoUpload.single('logo'), async (req, res) => {
     try {
         // Verificar si el usuario es admin
         if (!req.session.userId) {
             return res.status(401).json({ success: false, message: 'No autorizado' });
         }
 
+        console.log('Datos recibidos para registro de venue:', req.body);
+        
         const { name, location, description, contact_info } = req.body;
 
         if (!name || !location) {
@@ -394,15 +594,21 @@ app.post('/api/venues', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Verificar si se ha subido un logo
+            let logoFilename = null;
+            if (req.file) {
+                logoFilename = req.file.filename;
+            }
+            
             const [result] = await connection.query(
-                'INSERT INTO venues (name, location, description, contact_info) VALUES (?, ?, ?, ?)',
-                [name, location, description, contact_info]
+                'INSERT INTO venues (name, location, description, contact_info, logo) VALUES (?, ?, ?, ?, ?)',
+                [name, location, description, contact_info, logoFilename]
             );
 
             // Crear un foro asociado a la venue
             await connection.query(
-                'INSERT INTO forums (title, description, venue_id) VALUES (?, ?, ?)',
-                [name, description, result.insertId]
+                'INSERT INTO forums (title, description, venue_id, created_by) VALUES (?, ?, ?, ?)',
+                [name, description, result.insertId, req.session.userId]
             );
 
             res.status(201).json({ success: true, message: 'Venue creada exitosamente', venueId: result.insertId });
@@ -451,6 +657,7 @@ app.get('/api/user/forums', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Obtener los foros guardados por el usuario
             const [forums] = await connection.query(
                 `SELECT f.*, v.name as venue_name, v.location as venue_location 
                 FROM forums f 
@@ -598,7 +805,7 @@ app.get('/api/auth/current-user', async (req, res) => {
         const connection = await pool.getConnection();
         try {
             const [users] = await connection.query(
-                'SELECT id, username, email, role_id FROM users WHERE id = ?',
+                'SELECT id, username, email FROM users WHERE id = ?',
                 [req.session.userId]
             );
 
@@ -614,8 +821,8 @@ app.get('/api/auth/current-user', async (req, res) => {
                 [user.role_id]
             );
 
-            const role = roles.length > 0 ? roles[0].name : 'usuario';
-
+            const role = roles.length > 0 ? roles[0].name : 'usuario'; // Por defecto 'user' si no se encuentra
+            
             res.json({
                 success: true,
                 user: {
@@ -980,6 +1187,58 @@ app.delete('/api/user/venues/:venueId', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error al eliminar venue de favoritos' });
     }
 });
+// Endpoint para guardar una discoteca en favoritos
+app.post('/api/user/venues/:venueId', async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const userId = req.session.userId;
+        const venueId = req.params.venueId;
+        
+        console.log(`Guardando venue ${venueId} en favoritos para el usuario ${userId}`);
+        
+        const connection = await pool.getConnection();
+        
+        try {
+            // Verificar si ya existe la relación
+            const [existing] = await connection.query(
+                'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
+                [userId, venueId]
+            );
+            
+            if (existing.length > 0) {
+                connection.release();
+                return res.json({
+                    success: true,
+                    message: 'La venue ya está en favoritos',
+                    alreadySaved: true
+                });
+            }
+            
+            // Insertar la relación en la tabla user_venue_favorites
+            await connection.query(
+                'INSERT INTO user_venue_favorites (user_id, venue_id) VALUES (?, ?)',
+                [userId, venueId]
+            );
+            
+            connection.release();
+            
+            return res.json({
+                success: true,
+                message: 'Venue guardada en favoritos correctamente'
+            });
+        } catch (error) {
+            connection.release();
+            console.error('Error al guardar venue en favoritos:', error);
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error en el servidor:', error);
+        res.status(500).json({ success: false, message: 'Error al guardar venue en favoritos' });
+    }
+});
 
 // Endpoint para obtener eventos
 app.get('/api/events', async (req, res) => {
@@ -1228,8 +1487,9 @@ app.get('/api/venues/:venueId/comments', async (req, res) => {
         try {
             // Verificar si la tabla comments existe
             const [tables] = await connection.query("SHOW TABLES LIKE 'comments'");
+            
+            // Si la tabla no existe, devolver una lista vacía
             if (tables.length === 0) {
-                // Si la tabla no existe, devolver una lista vacía
                 console.log('La tabla comments no existe, devolviendo lista vacía');
                 return res.json({
                     success: true,
@@ -1241,7 +1501,8 @@ app.get('/api/venues/:venueId/comments', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.venue_id = ?
@@ -1293,7 +1554,8 @@ app.post('/api/venues/comments', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.id = ?`,
@@ -1353,7 +1615,8 @@ app.post('/api/venues/comments/reply', async (req, res) => {
             const [comments] = await connection.query(
                 `SELECT 
                     c.id, c.content, c.user_id, c.venue_id, c.parent_id, c.created_at, c.updated_at, 
-                    IFNULL(u.username, 'Usuario') as username
+                    IFNULL(u.username, 'Usuario') as username,
+                    u.profile_image
                 FROM comments c
                 LEFT JOIN users u ON c.user_id = u.id
                 WHERE c.id = ?`,
@@ -1400,7 +1663,17 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
             );
             
             if (existingFollow.length > 0) {
-                return res.status(400).json({ success: false, message: 'Ya sigues este venue' });
+                // Si ya lo sigue, simplemente devolver el contador actual
+                const [followerCountResult] = await connection.query(
+                    'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                    [venueId]
+                );
+                
+                return res.json({
+                    success: true,
+                    message: 'Ya sigues este venue',
+                    followerCount: parseInt(followerCountResult[0].count, 10)
+                });
             }
             
             // Iniciar transacción
@@ -1412,16 +1685,18 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
                 [req.session.userId, venueId]
             );
             
-            // Incrementar el contador de seguidores
-            await connection.query(
-                'UPDATE venues SET follower_count = follower_count + 1 WHERE id = ?',
+            // Calcular el contador de seguidores en tiempo real
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
                 [venueId]
             );
             
-            // Obtener el nuevo contador de seguidores
-            const [venueData] = await connection.query(
-                'SELECT follower_count FROM venues WHERE id = ?',
-                [venueId]
+            const followerCount = parseInt(followerCountResult[0].count, 10);
+            
+            // Actualizar el contador en la tabla venues para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
             );
             
             // Confirmar la transacción
@@ -1430,7 +1705,7 @@ app.post('/api/venues/:venueId/follow', async (req, res) => {
             res.json({
                 success: true,
                 message: 'Ahora sigues este venue',
-                followerCount: venueData[0].follower_count
+                followerCount: followerCount
             });
         } catch (error) {
             // Revertir la transacción en caso de error
@@ -1471,7 +1746,17 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
             );
             
             if (existingFollow.length === 0) {
-                return res.status(400).json({ success: false, message: 'No sigues este venue' });
+                // Si no lo sigue, simplemente devolver el contador actual
+                const [followerCountResult] = await connection.query(
+                    'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                    [venueId]
+                );
+                
+                return res.json({
+                    success: true,
+                    message: 'No sigues este venue',
+                    followerCount: parseInt(followerCountResult[0].count, 10)
+                });
             }
             
             // Iniciar transacción
@@ -1483,16 +1768,18 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
                 [req.session.userId, venueId]
             );
             
-            // Decrementar el contador de seguidores (asegurando que no sea negativo)
-            await connection.query(
-                'UPDATE venues SET follower_count = GREATEST(0, follower_count - 1) WHERE id = ?',
+            // Calcular el contador de seguidores en tiempo real
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
                 [venueId]
             );
             
-            // Obtener el nuevo contador de seguidores
-            const [venueData] = await connection.query(
-                'SELECT follower_count FROM venues WHERE id = ?',
-                [venueId]
+            const followerCount = parseInt(followerCountResult[0].count, 10);
+            
+            // Actualizar el contador en la tabla venues para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
             );
             
             // Confirmar la transacción
@@ -1501,7 +1788,7 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
             res.json({
                 success: true,
                 message: 'Has dejado de seguir este venue',
-                followerCount: venueData[0].follower_count
+                followerCount: followerCount
             });
         } catch (error) {
             // Revertir la transacción en caso de error
@@ -1522,11 +1809,6 @@ app.delete('/api/venues/:venueId/follow', async (req, res) => {
 // Endpoint para verificar si el usuario sigue un venue
 app.get('/api/venues/:venueId/follow-status', async (req, res) => {
     try {
-        // Verificar si el usuario está autenticado
-        if (!req.session || !req.session.userId) {
-            return res.status(401).json({ success: false, message: 'No autorizado' });
-        }
-
         const venueId = req.params.venueId;
         
         if (!venueId) {
@@ -1535,15 +1817,39 @@ app.get('/api/venues/:venueId/follow-status', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Calcular el número real de seguidores con COUNT(*)
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                [venueId]
+            );
+            
+            const followerCount = followerCountResult[0].count;
+            
+            // Si el usuario no está autenticado, solo devolver el contador
+            if (!req.session || !req.session.userId) {
+                return res.json({ 
+                    success: true, 
+                    isFollowing: false,
+                    followerCount: followerCount
+                });
+            }
+            
             // Verificar si el usuario sigue este venue
             const [existingFollow] = await connection.query(
                 'SELECT * FROM user_venue_favorites WHERE user_id = ? AND venue_id = ?',
                 [req.session.userId, venueId]
             );
             
+            // Actualizar el contador en la base de datos para mantenerlo sincronizado
+            await connection.query(
+                'UPDATE venues SET follower_count = ? WHERE id = ?',
+                [followerCount, venueId]
+            );
+            
             res.json({
                 success: true,
-                isFollowing: existingFollow.length > 0
+                isFollowing: existingFollow.length > 0,
+                followerCount: followerCount
             });
         } finally {
             connection.release();
@@ -1599,13 +1905,14 @@ app.get('/api/user/forums/status/:forumId', async (req, res) => {
 app.get('/api/venues/:venueId', async (req, res) => {
     try {
         const venueId = req.params.venueId;
-
+        
         if (!venueId) {
             return res.status(400).json({ success: false, message: 'ID de venue no especificado' });
         }
 
         const connection = await pool.getConnection();
         try {
+            // Obtener datos del venue
             const [venues] = await connection.query(
                 'SELECT * FROM venues WHERE id = ?',
                 [venueId]
@@ -1615,9 +1922,28 @@ app.get('/api/venues/:venueId', async (req, res) => {
                 return res.status(404).json({ success: false, message: 'Venue no encontrado' });
             }
             
+            const venue = venues[0];
+            
+            // Calcular el número real de seguidores con COUNT(*)
+            const [followerCountResult] = await connection.query(
+                'SELECT COUNT(*) as count FROM user_venue_favorites WHERE venue_id = ?',
+                [venueId]
+            );
+            
+            // Actualizar el contador de seguidores en la respuesta
+            venue.follower_count = followerCountResult[0].count;
+            
+            // Si hay una discrepancia entre el contador almacenado y el real, actualizar la base de datos
+            if (venue.follower_count !== followerCountResult[0].count) {
+                await connection.query(
+                    'UPDATE venues SET follower_count = ? WHERE id = ?',
+                    [followerCountResult[0].count, venueId]
+                );
+            }
+            
             res.json({
                 success: true,
-                venue: venues[0]
+                venue: venue
             });
         } finally {
             connection.release();
@@ -1679,11 +2005,877 @@ app.get('/api/most-followed-venues', async (req, res) => {
     }
 });
 
+// Endpoint para subir imágenes de perfil
+app.post('/api/upload-profile-image', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Actualizar la imagen de perfil del usuario
+            await connection.query(
+                'UPDATE users SET profile_image = ? WHERE id = ?',
+                [req.file.filename, req.session.userId]
+            );
+
+            res.json({ success: true, message: 'Imagen de perfil actualizada correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al subir imagen de perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al subir imagen de perfil' });
+    }
+});
+
+// Endpoint para obtener la imagen de perfil del usuario actual
+app.get('/api/user/profile-image', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const userId = req.session.userId;
+        const connection = await pool.getConnection();
+        try {
+            // Obtener la imagen de perfil del usuario
+            const [users] = await connection.query(
+                'SELECT profile_image FROM users WHERE id = ?',
+                [userId]
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            const profileImage = users[0].profile_image;
+
+            res.json({
+                success: true,
+                profileImage: profileImage
+            });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener imagen de perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener imagen de perfil' });
+    }
+});
+
+app.delete('/api/comments/:commentId', async (req, res) => {
+    console.log('Solicitud para eliminar comentario recibida. ID:', req.params.commentId);
+
+    // Verificar si el usuario está autenticado
+    if (!req.session || !req.session.userId) {
+        console.log('Usuario no autenticado intentando eliminar comentario');
+        return res.status(401).json({ success: false, message: 'No autorizado' });
+    }
+
+    const userId = req.session.userId;
+    const commentId = req.params.commentId;
+    console.log('ID del comentario a eliminar:', commentId);
+    console.log('ID del usuario que intenta eliminar:', userId);
+
+    // Validar que commentId es un número
+    if (isNaN(parseInt(commentId, 10))) {
+        console.log('ID de comentario inválido:', commentId);
+        return res.status(400).json({ success: false, message: 'ID de comentario inválido.' });
+    }
+
+    let connection; // Declarar fuera para que esté disponible en el bloque finally
+
+    try {
+        connection = await pool.getConnection();
+        console.log('Conexión a la base de datos obtenida.');
+
+        // Primero, verificar si el usuario es el autor del comentario
+        const [commentInfo] = await connection.query(
+            'SELECT user_id FROM comments WHERE id = ?',
+            [commentId]
+        );
+        
+        console.log('Información del comentario:', commentInfo);
+        
+        if (commentInfo.length === 0) {
+            console.log('Comentario no encontrado en la base de datos');
+            return res.status(404).json({ success: false, message: 'Comentario no encontrado.' });
+        }
+        
+        const commentAuthorId = commentInfo[0].user_id;
+        console.log('ID del autor del comentario:', commentAuthorId);
+        
+        // Verificar si el usuario es administrador (forzado a true para pruebas)
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        // Permitir eliminar si es el autor O si es administrador
+        if (Number(userId) !== Number(commentAuthorId) && !isAdmin) {
+            console.log('Usuario no autorizado para eliminar este comentario');
+            return res.status(403).json({ 
+                success: false, 
+                message: 'No tienes permiso para eliminar este comentario' 
+            });
+        }
+
+        console.log('Usuario autorizado para eliminar el comentario');
+        
+        // Si llegamos aquí, el usuario tiene permiso para eliminar
+        const query_str = 'DELETE FROM comments WHERE id = ?';
+        console.log('Ejecutando consulta DELETE:', query_str, 'con ID:', commentId);
+
+        const [results] = await connection.query(query_str, [commentId]);
+        
+        console.log('Resultado de la eliminación:', results);
+
+        if (results.affectedRows > 0) {
+            console.log('Comentario eliminado correctamente de la base de datos.');
+            res.status(200).json({ success: true, message: 'Comentario eliminado correctamente.' });
+        } else {
+            console.log('No se encontró el comentario en la base de datos con ID:', commentId);
+            res.status(404).json({ success: false, message: 'Comentario no encontrado.' });
+        }
+
+    } catch (error) {
+        console.error('Error general al eliminar el comentario:', error);
+        return res.status(500).json({ success: false, message: 'Error general al eliminar el comentario: ' + error.message });
+    } finally {
+        if (connection) {
+            connection.release();
+            console.log('Conexión a la base de datos liberada.');
+        }
+    }
+});
+
+// Endpoint para obtener todos los usuarios (solo para administradores)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Forzar estado de administrador para pruebas (como en el endpoint /api/check-auth)
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+        
+        // Obtener todos los usuarios
+        const connection = await pool.getConnection();
+        try {
+            console.log('Obteniendo lista de usuarios');
+            const [users] = await connection.query('SELECT id, username, email, created_at FROM users ORDER BY id');
+            console.log(`Se encontraron ${users.length} usuarios`);
+            
+            // Añadir manualmente el campo is_admin a cada usuario
+            const usersWithAdminFlag = users.map(user => ({
+                ...user,
+                is_admin: user.id === req.session.userId // El usuario actual es admin para pruebas
+            }));
+            
+            return res.json({ success: true, users: usersWithAdminFlag });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        return res.status(500).json({ success: false, message: 'Error al obtener los usuarios', error: error.message });
+    }
+});
+
+// Endpoint para eliminar un usuario y todos sus comentarios (solo para administradores)
+// Endpoint para eliminar un usuario y todos sus comentarios (solo para administradores)
+app.delete('/api/admin/users/:userId', async (req, res) => {
+    let connection;
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        console.log('Solicitud para eliminar usuario con ID:', req.params.userId);
+        
+        // Forzar estado de administrador para pruebas
+        const isAdmin = true;
+        console.log('Estado de administrador forzado para pruebas:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden eliminar usuarios.' });
+        }
+
+        const { userId } = req.params;
+        console.log(`Procesando eliminación del usuario ${userId}`);
+        
+        // No permitir que un usuario elimine su propia cuenta desde este endpoint
+        if (req.session.userId == userId) {
+            console.log('Intento de eliminar la propia cuenta del administrador');
+            return res.status(400).json({ success: false, message: 'No puedes eliminar tu propia cuenta desde este endpoint' });
+        }
+
+        connection = await pool.getConnection();
+        
+        // Verificar que el usuario a eliminar existe
+        console.log(`Verificando si el usuario ${userId} existe`);
+        const [userRows] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+        
+        if (userRows.length === 0) {
+            console.log(`Usuario ${userId} no encontrado`);
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+        
+        console.log(`Usuario ${userId} encontrado, procediendo con la eliminación`);
+        
+        // Iniciar transacción para garantizar que todas las operaciones se completen o ninguna
+        await connection.beginTransaction();
+        
+        try {
+            // Eliminar todos los comentarios del usuario
+            console.log(`Eliminando comentarios del usuario ${userId}`);
+            await connection.query('DELETE FROM comments WHERE user_id = ?', [userId]);
+            
+            // Eliminar todas las relaciones de foros guardados del usuario
+            console.log(`Eliminando relaciones de foros guardados del usuario ${userId}`);
+            await connection.query('DELETE FROM user_forums WHERE user_id = ?', [userId]);
+            
+            // Eliminar al usuario
+            console.log(`Eliminando usuario ${userId}`);
+            await connection.query('DELETE FROM users WHERE id = ?', [userId]);
+            
+            // Confirmar la transacción
+            await connection.commit();
+            console.log(`Transacción completada, usuario ${userId} eliminado correctamente`);
+            
+            return res.json({ success: true, message: 'Usuario y todos sus datos asociados eliminados correctamente' });
+        } catch (error) {
+            // Si hay un error, revertir la transacción
+            console.error(`Error durante la transacción, revirtiendo cambios:`, error);
+            await connection.rollback();
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+        return res.status(500).json({ success: false, message: 'Error al eliminar el usuario', error: error.message });
+    } finally {
+        if (connection) {
+            connection.release();
+            console.log('Conexión a la base de datos liberada');
+        }
+    }
+});
+// Endpoint para denunciar un comentario
+app.post('/api/comments/:commentId/denunciar', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        const userId = req.session.userId;
+        const commentId = req.params.commentId;
+        const { motivo } = req.body;
+
+        console.log(`Usuario ${userId} denunciando comentario ${commentId}. Motivo: ${motivo}`);
+
+        // Validar que commentId es un número
+        if (isNaN(parseInt(commentId, 10))) {
+            return res.status(400).json({ success: false, message: 'ID de comentario inválido' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el comentario existe
+            const [comments] = await connection.query(
+                'SELECT * FROM comments WHERE id = ?',
+                [commentId]
+            );
+
+            if (comments.length === 0) {
+                return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+            }
+
+            // Verificar si el usuario ya ha denunciado este comentario
+            const [existingReports] = await connection.query(
+                'SELECT * FROM denuncias WHERE user_id = ? AND comment_id = ?',
+                [userId, commentId]
+            );
+
+            if (existingReports.length > 0) {
+                return res.status(400).json({ success: false, message: 'Ya has denunciado este comentario anteriormente' });
+            }
+
+            // Registrar la denuncia
+            await connection.query(
+                'INSERT INTO denuncias (user_id, comment_id, motivo) VALUES (?, ?, ?)',
+                [userId, commentId, motivo]
+            );
+
+            res.json({ success: true, message: 'Comentario denunciado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al denunciar comentario:', error);
+        res.status(500).json({ success: false, message: 'Error al denunciar el comentario: ' + error.message });
+    }
+});
+
+// Endpoint para obtener todas las denuncias (solo para administradores)
+app.get('/api/admin/denuncias', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener el filtro de la consulta
+            const filter = req.query.filter || 'todas';
+            
+            // Construir la consulta SQL según el filtro
+            let query = `
+                SELECT d.*, 
+                       u.username as reportado_por, 
+                       c.content as comentario_texto,
+                       (SELECT username FROM users WHERE id = c.user_id) as comentario_autor,
+                       c.id as comentario_id
+                FROM denuncias d
+                JOIN users u ON d.user_id = u.id
+                JOIN comments c ON d.comment_id = c.id
+            `;
+            
+            // Añadir condición de filtro si no es 'todas'
+            if (filter !== 'todas') {
+                query += ` WHERE d.estado = '${filter}' `;
+            }
+            
+            // Añadir ordenamiento
+            query += `
+                ORDER BY 
+                    CASE 
+                        WHEN d.estado = 'pendiente' THEN 1
+                        WHEN d.estado = 'revisada' THEN 2
+                        ELSE 3
+                    END,
+                    d.created_at DESC
+            `;
+            
+            const [denuncias] = await connection.query(query);
+            
+            return res.json({ success: true, denuncias: denuncias });
+        } catch (error) {
+            console.error('Error al obtener denuncias:', error);
+            return res.status(500).json({ success: false, message: 'Error al obtener denuncias: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al obtener denuncias:', error);
+        return res.status(500).json({ success: false, message: 'Error general al obtener denuncias: ' + error.message });
+    }
+});
+
+// Endpoint para cambiar el estado de una denuncia (solo para administradores)
+app.put('/api/admin/denuncias/:denunciaId/estado', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden acceder a esta función.' });
+        }
+
+        const denunciaId = req.params.denunciaId;
+        const { estado } = req.body;
+
+        // Validar que el estado sea válido
+        if (!['pendiente', 'revisada', 'descartada'].includes(estado)) {
+            return res.status(400).json({ success: false, message: 'Estado no válido' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Actualizar el estado de la denuncia
+            const [result] = await connection.query(
+                'UPDATE denuncias SET estado = ? WHERE id = ?',
+                [estado, denunciaId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Denuncia no encontrada' });
+            }
+
+            return res.json({ success: true, message: 'Estado de la denuncia actualizado correctamente' });
+        } catch (error) {
+            console.error('Error al actualizar estado de denuncia:', error);
+            return res.status(500).json({ success: false, message: 'Error al actualizar estado de denuncia: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al actualizar estado de denuncia:', error);
+        return res.status(500).json({ success: false, message: 'Error general al actualizar estado de denuncia: ' + error.message });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+// Endpoint para obtener eventos de la venue del delegado
+app.get('/api/delegate/events', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Obtener eventos de la venue
+            const [events] = await connection.query(
+                'SELECT * FROM events WHERE venue_id = ? ORDER BY event_date DESC',
+                [venueId]
+            );
+            
+            res.json({ success: true, events });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener eventos:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener eventos' });
+    }
+});
+
+// Endpoint para crear un nuevo evento
+app.post('/api/delegate/events', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const { title, description, event_date } = req.body;
+        
+        if (!title || !description || !event_date) {
+            return res.status(400).json({ success: false, message: 'Todos los campos son requeridos' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Insertar el nuevo evento
+            const [result] = await connection.query(
+                'INSERT INTO events (title, description, event_date, venue_id, created_by) VALUES (?, ?, ?, ?, ?)',
+                [title, description, event_date, venueId, req.session.userId]
+            );
+            
+            res.status(201).json({ success: true, message: 'Evento creado exitosamente', eventId: result.insertId });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear evento:', error);
+        res.status(500).json({ success: false, message: 'Error al crear evento' });
+    }
+});
+
+// Endpoint para eliminar un evento
+app.delete('/api/delegate/events/:eventId', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const eventId = req.params.eventId;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Verificar que el evento pertenece a la venue del delegado
+            const [event] = await connection.query(
+                'SELECT id FROM events WHERE id = ? AND venue_id = ?',
+                [eventId, venueId]
+            );
+            
+            if (event.length === 0) {
+                return res.status(404).json({ success: false, message: 'Evento no encontrado o no pertenece a tu venue' });
+            }
+            
+            // Eliminar el evento
+            await connection.query(
+                'DELETE FROM events WHERE id = ?',
+                [eventId]
+            );
+            
+            res.json({ success: true, message: 'Evento eliminado exitosamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar evento:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar evento' });
+    }
+});
+
+// Endpoint para obtener todos los delegados (para el panel de administración)
+app.get('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todos los usuarios con rol de delegado y la información de sus venues
+            const [delegates] = await connection.query(`
+                SELECT u.id as user_id, u.username, u.email, v.id as venue_id, v.name as venue_name
+                FROM users u
+                JOIN venues v ON u.venue_id = v.id
+                WHERE u.role = 'delegate'
+                ORDER BY u.username
+            `);
+            
+            res.json({ success: true, delegates });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener delegados:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener delegados' });
+    }
+});
+
+// Endpoint para asignar un delegado a una venue
+app.post('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const { userId, venueId } = req.body;
+        
+        if (!userId || !venueId) {
+            return res.status(400).json({ success: false, message: 'Se requiere ID de usuario y ID de venue' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe
+            const [user] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            // Verificar que la venue existe
+            const [venue] = await connection.query('SELECT id FROM venues WHERE id = ?', [venueId]);
+            if (venue.length === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrada' });
+            }
+
+            // Actualizar el usuario a rol de delegado y asignar la venue
+            await connection.query(
+                'UPDATE users SET role = ?, venue_id = ? WHERE id = ?',
+                ['delegate', venueId, userId]
+            );
+            
+            res.json({ success: true, message: 'Delegado asignado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al asignar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al asignar delegado' });
+    }
+});
+
+// Endpoint para eliminar un delegado
+app.delete('/api/admin/delegates/:userId', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const userId = req.params.userId;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe y es delegado
+            const [user] = await connection.query(
+                'SELECT id FROM users WHERE id = ? AND role = ?',
+                [userId, 'delegate']
+            );
+            
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Delegado no encontrado' });
+            }
+
+            // Quitar el rol de delegado y la asignación de venue
+            await connection.query(
+                'UPDATE users SET role = ?, venue_id = NULL WHERE id = ?',
+                ['user', userId]
+            );
+            
+            res.json({ success: true, message: 'Delegado eliminado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar delegado' });
+    }
+});
+
+// Endpoint para obtener todos los usuarios (para el selector de delegados)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todos los usuarios que no son delegados
+            const [users] = await connection.query(`
+                SELECT id, username, email
+                FROM users
+                WHERE role != 'delegate' OR role IS NULL
+                ORDER BY username
+            `);
+            
+            res.json({ success: true, users });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener usuarios' });
+    }
+});
+
+// Endpoint para asignar un delegado a una venue
+app.post('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const { userId, venueId } = req.body;
+        
+        if (!userId || !venueId) {
+            return res.status(400).json({ success: false, message: 'Se requiere ID de usuario y ID de venue' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe
+            const [user] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            // Verificar que la venue existe
+            const [venue] = await connection.query('SELECT id FROM venues WHERE id = ?', [venueId]);
+            if (venue.length === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrada' });
+            }
+
+            // Verificar qué columnas existen en la tabla users
+            const [columns] = await connection.query('SHOW COLUMNS FROM users');
+            const columnNames = columns.map(col => col.Field);
+            
+            // Construir la consulta según las columnas existentes
+            if (columnNames.includes('role')) {
+                // Si existe la columna 'role'
+                await connection.query(
+                    'UPDATE users SET role = ?, venue_id = ? WHERE id = ?',
+                    ['delegate', venueId, userId]
+                );
+            }
+            
+            // Si existe la columna 'role_id'
+            if (columnNames.includes('role_id')) {
+                // Obtener el ID del rol 'delegado'
+                const [delegateRole] = await connection.query(
+                    'SELECT id FROM roles WHERE name = ? OR name = ?',
+                    ['delegado', 'delegate']
+                );
+                
+                if (delegateRole.length > 0) {
+                    await connection.query(
+                        'UPDATE users SET role_id = ?, venue_id = ? WHERE id = ?',
+                        [delegateRole[0].id, venueId, userId]
+                    );
+                }
+            }
+            
+            // Si existe la columna 'role_1'
+            if (columnNames.includes('role_1')) {
+                await connection.query(
+                    'UPDATE users SET role_1 = ?, venue_id = ? WHERE id = ?',
+                    ['delegado', venueId, userId]
+                );
+            }
+            
+            res.json({ success: true, message: 'Delegado asignado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al asignar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al asignar delegado' });
+    }
+});
+
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// Endpoint para eliminar un comentario denunciado
+app.delete('/api/comments/:id', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden eliminar comentarios.' });
+        }
+
+        const commentId = req.params.id;
+        const connection = await pool.getConnection();
+        try {
+            // Eliminar el comentario
+            const [result] = await connection.query(
+                'DELETE FROM comments WHERE id = ?',
+                [commentId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+            }
+
+            // Actualizar el estado de las denuncias asociadas a este comentario
+            await connection.query(
+                'UPDATE denuncias SET estado = "revisada" WHERE comment_id = ?',
+                [commentId]
+            );
+
+            return res.json({ success: true, message: 'Comentario eliminado correctamente' });
+        } catch (error) {
+            console.error('Error al eliminar comentario:', error);
+            return res.status(500).json({ success: false, message: 'Error al eliminar comentario: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al eliminar comentario:', error);
+        return res.status(500).json({ success: false, message: 'Error general al eliminar comentario: ' + error.message });
+    }
 });
