@@ -1823,7 +1823,7 @@ app.get('/api/venues/:venueId/follow-status', async (req, res) => {
                 [venueId]
             );
             
-            const followerCount = parseInt(followerCountResult[0].count, 10);
+            const followerCount = followerCountResult[0].count;
             
             // Si el usuario no está autenticado, solo devolver el contador
             if (!req.session || !req.session.userId) {
@@ -2338,8 +2338,8 @@ app.get('/api/admin/denuncias', async (req, res) => {
 
         console.log('Verificando autenticación para el usuario ID:', req.session.userId);
         
-        // Verificar si el usuario es administrador (solo el usuario con ID 1)
-        const isAdmin = req.session.userId === 1;
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
         console.log('Estado de administrador:', isAdmin);
         
         if (!isAdmin) {
@@ -2348,15 +2348,28 @@ app.get('/api/admin/denuncias', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
-            // Obtener todas las denuncias con información adicional
-            const [denuncias] = await connection.query(`
+            // Obtener el filtro de la consulta
+            const filter = req.query.filter || 'todas';
+            
+            // Construir la consulta SQL según el filtro
+            let query = `
                 SELECT d.*, 
-                       u.username, 
-                       c.content as comment_content,
-                       (SELECT username FROM users WHERE id = c.user_id) as comment_author
+                       u.username as reportado_por, 
+                       c.content as comentario_texto,
+                       (SELECT username FROM users WHERE id = c.user_id) as comentario_autor,
+                       c.id as comentario_id
                 FROM denuncias d
                 JOIN users u ON d.user_id = u.id
                 JOIN comments c ON d.comment_id = c.id
+            `;
+            
+            // Añadir condición de filtro si no es 'todas'
+            if (filter !== 'todas') {
+                query += ` WHERE d.estado = '${filter}' `;
+            }
+            
+            // Añadir ordenamiento
+            query += `
                 ORDER BY 
                     CASE 
                         WHEN d.estado = 'pendiente' THEN 1
@@ -2364,7 +2377,9 @@ app.get('/api/admin/denuncias', async (req, res) => {
                         ELSE 3
                     END,
                     d.created_at DESC
-            `);
+            `;
+            
+            const [denuncias] = await connection.query(query);
             
             return res.json({ success: true, denuncias: denuncias });
         } catch (error) {
@@ -2389,8 +2404,8 @@ app.put('/api/admin/denuncias/:denunciaId/estado', async (req, res) => {
 
         console.log('Verificando autenticación para el usuario ID:', req.session.userId);
         
-        // Verificar si el usuario es administrador (solo el usuario con ID 1)
-        const isAdmin = req.session.userId === 1;
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
         console.log('Estado de administrador:', isAdmin);
         
         if (!isAdmin) {
@@ -2813,4 +2828,54 @@ app.post('/api/admin/delegates', async (req, res) => {
 // Servir archivos estáticos para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Endpoint para eliminar un comentario denunciado
+app.delete('/api/comments/:id', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        console.log('Verificando autenticación para el usuario ID:', req.session.userId);
+        
+        // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        console.log('Estado de administrador:', isAdmin);
+        
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado. Solo los administradores pueden eliminar comentarios.' });
+        }
+
+        const commentId = req.params.id;
+        const connection = await pool.getConnection();
+        try {
+            // Eliminar el comentario
+            const [result] = await connection.query(
+                'DELETE FROM comments WHERE id = ?',
+                [commentId]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+            }
+
+            // Actualizar el estado de las denuncias asociadas a este comentario
+            await connection.query(
+                'UPDATE denuncias SET estado = "revisada" WHERE comment_id = ?',
+                [commentId]
+            );
+
+            return res.json({ success: true, message: 'Comentario eliminado correctamente' });
+        } catch (error) {
+            console.error('Error al eliminar comentario:', error);
+            return res.status(500).json({ success: false, message: 'Error al eliminar comentario: ' + error.message });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error general al eliminar comentario:', error);
+        return res.status(500).json({ success: false, message: 'Error general al eliminar comentario: ' + error.message });
+    }
 });

@@ -3,22 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Denuncias - Foro Disco HTL</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="../css/styles.css">
-    <link rel="stylesheet" href="../css/admin.css">
+    <title>Gestión de Denuncias - ForoDisco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .panel-title {
+            color: #ff4b6e;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
+        }
+
+        .admin-menu {
+            margin-bottom: 2rem;
+        }
+
+        .admin-links {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .admin-link {
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-link:hover, .admin-link.active {
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
+        }
+
         .denuncias-container {
-            margin: 20px;
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.05);
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            margin-top: 1rem;
         }
         
         .denuncia-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -42,21 +130,21 @@
         
         .denuncia-meta {
             font-size: 0.9em;
-            color: #666;
+            color: #ccc;
         }
         
         .denuncia-content {
-            background-color: #f9f9f9;
-            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
             border-radius: 5px;
             margin-top: 5px;
         }
         
         .denuncia-motivo {
-            background-color: #fff3f3;
-            padding: 10px;
+            background-color: rgba(255, 75, 110, 0.1);
+            padding: 1rem;
             border-radius: 5px;
-            border-left: 3px solid #ff4081;
+            border-left: 3px solid #ff4b6e;
             margin-top: 5px;
         }
         
@@ -73,6 +161,11 @@
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-revisada:hover {
+            background-color: #3d8b40;
         }
         
         .btn-descartar {
@@ -82,6 +175,11 @@
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-descartar:hover {
+            background-color: #d32f2f;
         }
         
         .btn-eliminar-comentario {
@@ -91,6 +189,11 @@
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-eliminar-comentario:hover {
+            background-color: #f57c00;
         }
         
         .estado-badge {
@@ -116,74 +219,97 @@
         }
         
         .no-denuncias {
-            padding: 20px;
+            padding: 2rem;
             text-align: center;
-            color: #666;
+            color: #ccc;
         }
         
         .filters {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
-            padding: 0 20px;
+            margin-bottom: 1.5rem;
         }
         
         .filter-btn {
             padding: 8px 15px;
-            border: 1px solid #ddd;
-            background-color: #f5f5f5;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
             cursor: pointer;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
         }
         
         .filter-btn.active {
-            background-color: #ff4081;
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
+            border-color: #ff4b6e;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
             color: white;
-            border-color: #ff4081;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .notification.success {
+            background-color: rgba(76, 175, 80, 0.9);
+        }
+        
+        .notification.error {
+            background-color: rgba(244, 67, 54, 0.9);
+        }
+
+        .content-wrapper {
+            padding: 1rem;
         }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Admin: <span class="username" id="adminUsername"></span></span>
+            <a href="#" id="logoutBtn" class="btn-logout">Cerrar sesión</a>
+        </div>
+    </nav>
+
     <div class="admin-container">
-        <!-- Barra lateral de navegación -->
-        <div class="sidebar">
-            <div class="logo">
-                <img src="../images/logo.png" alt="Logo">
-                <h2>Panel Admin</h2>
-            </div>
-            <nav class="admin-nav">
-                <ul>
-                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                    <li><a href="usuarios.html"><i class="fas fa-users"></i> Usuarios</a></li>
-                    <li><a href="denuncias.html" class="active"><i class="fas fa-flag"></i> Denuncias</a></li>
-                    <li><a href="../index.html"><i class="fas fa-home"></i> Volver al sitio</a></li>
-                </ul>
-            </nav>
+        <h1 class="panel-title">Panel de Administración - ForoDisco</h1>
+        
+        <div class="admin-menu">
+            <h2>Menú de Administración</h2>
+            <ul class="admin-links">
+                <li><a href="/admin/panel.html" class="admin-link">Gestión de Discotecas</a></li>
+                <li><a href="/admin/usuarios.html" class="admin-link">Gestión de Usuarios</a></li>
+                <li><a href="/admin/denuncias.html" class="admin-link active">Gestión de Denuncias</a></li>
+                <li><a href="/admin/delegados.html" class="admin-link">Gestión de Delegados</a></li>
+            </ul>
         </div>
 
-        <!-- Contenido principal -->
-        <div class="main-content">
-            <header class="admin-header">
-                <h1>Gestión de Denuncias</h1>
-                <div class="user-info">
-                    <span id="adminUsername">Admin</span>
-                    <a href="#" id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
-                </div>
-            </header>
-
-            <div class="content-wrapper">
-                <div class="filters">
-                    <button class="filter-btn active" data-filter="todas">Todas</button>
-                    <button class="filter-btn" data-filter="pendiente">Pendientes</button>
-                    <button class="filter-btn" data-filter="revisada">Revisadas</button>
-                    <button class="filter-btn" data-filter="descartada">Descartadas</button>
-                </div>
-                
-                <div class="denuncias-container" id="denunciasContainer">
-                    <!-- Las denuncias se cargarán aquí dinámicamente -->
-                    <div class="no-denuncias">
-                        <p>Cargando denuncias...</p>
-                    </div>
+        <div class="content-wrapper">
+            <div class="filters">
+                <button class="filter-btn active" data-filter="todas">Todas</button>
+                <button class="filter-btn" data-filter="pendiente">Pendientes</button>
+                <button class="filter-btn" data-filter="revisada">Revisadas</button>
+                <button class="filter-btn" data-filter="descartada">Descartadas</button>
+            </div>
+            
+            <div class="denuncias-container" id="denunciasContainer">
+                <!-- Las denuncias se cargarán aquí dinámicamente -->
+                <div class="no-denuncias">
+                    <p>Cargando denuncias...</p>
                 </div>
             </div>
         </div>
@@ -192,7 +318,6 @@
     <!-- Notificaciones -->
     <div id="notification" class="notification"></div>
 
-    <script src="../js/auth.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar si el usuario es administrador
@@ -216,74 +341,81 @@
             try {
                 const response = await fetch('/api/check-auth', {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     credentials: 'include'
                 });
                 
                 const data = await response.json();
                 
-                if (!data.authenticated || !data.isAdmin) {
-                    // Redirigir a la página principal si no es administrador
-                    window.location.href = '../index.html';
+                if (!data.authenticated) {
+                    // Redirigir a la página de inicio de sesión
+                    window.location.href = '/login.html';
                     return;
                 }
                 
-                // Mostrar nombre de usuario
+                if (!data.isAdmin) {
+                    // Redirigir a la página principal si no es administrador
+                    window.location.href = '/index.html';
+                    return;
+                }
+                
+                // Mostrar el nombre de usuario
                 document.getElementById('adminUsername').textContent = data.username;
                 
             } catch (error) {
                 console.error('Error al verificar autenticación:', error);
-                showNotification('Error al verificar permisos de administrador', 'error');
-                // Redirigir a la página principal
-                window.location.href = '../index.html';
+                window.location.href = '/login.html';
             }
         }
         
         // Función para cargar las denuncias
         async function loadDenuncias(filter = 'todas') {
             try {
-                const response = await fetch('/api/admin/denuncias', {
+                const container = document.getElementById('denunciasContainer');
+                container.innerHTML = `
+                    <div class="no-denuncias">
+                        <p>Cargando denuncias...</p>
+                    </div>
+                `;
+                
+                const response = await fetch(`/api/admin/denuncias?filter=${filter}`, {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     credentials: 'include'
                 });
                 
                 const data = await response.json();
+                console.log('Respuesta de denuncias:', data);
                 
                 if (!data.success) {
-                    showNotification('Error al cargar denuncias: ' + data.message, 'error');
-                    return;
-                }
-                
-                const denunciasContainer = document.getElementById('denunciasContainer');
-                
-                // Filtrar denuncias según el filtro seleccionado
-                let denuncias = data.denuncias;
-                if (filter !== 'todas') {
-                    denuncias = denuncias.filter(denuncia => denuncia.estado === filter);
-                }
-                
-                if (denuncias.length === 0) {
-                    denunciasContainer.innerHTML = `
+                    container.innerHTML = `
                         <div class="no-denuncias">
-                            <p>No hay denuncias ${filter !== 'todas' ? 'con estado ' + filter : ''} para mostrar.</p>
+                            <p>Error al cargar denuncias: ${data.message}</p>
                         </div>
                     `;
                     return;
                 }
                 
-                // Generar HTML para cada denuncia
+                if (data.denuncias.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-denuncias">
+                            <p>No hay denuncias ${filter !== 'todas' ? 'con este filtro' : ''}</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
                 let html = '';
-                denuncias.forEach(denuncia => {
-                    const fecha = new Date(denuncia.created_at).toLocaleString();
+                
+                data.denuncias.forEach(denuncia => {
+                    const fecha = new Date(denuncia.created_at).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                     
-                    // Determinar la clase del estado
                     let estadoClass = '';
-                    switch (denuncia.estado) {
+                    switch(denuncia.estado) {
                         case 'pendiente':
                             estadoClass = 'estado-pendiente';
                             break;
@@ -295,63 +427,57 @@
                             break;
                     }
                     
-                    // Generar botones de acción según el estado
-                    let botonesAccion = '';
-                    if (denuncia.estado === 'pendiente') {
-                        botonesAccion = `
-                            <button class="btn-revisada" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'revisada')">
-                                <i class="fas fa-check"></i> Marcar como revisada
-                            </button>
-                            <button class="btn-descartar" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'descartada')">
-                                <i class="fas fa-times"></i> Descartar
-                            </button>
-                            <button class="btn-eliminar-comentario" onclick="eliminarComentarioDenunciado(${denuncia.comment_id})">
-                                <i class="fas fa-trash"></i> Eliminar comentario
-                            </button>
-                        `;
-                    } else {
-                        botonesAccion = `
-                            <button class="btn-revisada" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'pendiente')">
-                                <i class="fas fa-undo"></i> Volver a pendiente
-                            </button>
-                        `;
-                    }
-                    
                     html += `
-                        <div class="denuncia-item" data-id="${denuncia.id}" data-estado="${denuncia.estado}">
+                        <div class="denuncia-item">
                             <div class="denuncia-header">
                                 <div class="denuncia-info">
-                                    <strong>Denuncia #${denuncia.id}</strong>
+                                    <h3>Denuncia #${denuncia.id}</h3>
                                     <div class="denuncia-meta">
-                                        <span>Reportado por: ${denuncia.username}</span> | 
-                                        <span>Fecha: ${fecha}</span>
+                                        <span>Reportado por: ${denuncia.reportado_por || 'Usuario desconocido'}</span> | 
+                                        <span>Fecha: ${fecha}</span> | 
+                                        <span>Estado: <span class="estado-badge ${estadoClass}">${denuncia.estado.toUpperCase()}</span></span>
                                     </div>
                                 </div>
-                                <span class="estado-badge ${estadoClass}">${denuncia.estado}</span>
                             </div>
                             <div class="denuncia-content">
                                 <strong>Comentario denunciado:</strong>
-                                <p>${denuncia.comment_content}</p>
+                                <p>${denuncia.comentario_texto || 'Contenido no disponible'}</p>
                                 <div class="denuncia-meta">
-                                    <span>Autor del comentario: ${denuncia.comment_author}</span>
+                                    <span>Autor: ${denuncia.comentario_autor || 'Autor desconocido'}</span> | 
+                                    <span>ID del comentario: ${denuncia.comentario_id || 'ID no disponible'}</span>
                                 </div>
                             </div>
                             <div class="denuncia-motivo">
                                 <strong>Motivo de la denuncia:</strong>
-                                <p>${denuncia.motivo}</p>
+                                <p>${denuncia.motivo || 'No se especificó un motivo'}</p>
                             </div>
                             <div class="denuncia-actions">
-                                ${botonesAccion}
+                                ${denuncia.estado === 'pendiente' ? `
+                                    <button class="btn-revisada" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'revisada')">Marcar como revisada</button>
+                                    <button class="btn-descartar" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'descartada')">Descartar</button>
+                                    <button class="btn-eliminar-comentario" onclick="eliminarComentarioDenunciado(${denuncia.comentario_id})">Eliminar comentario</button>
+                                ` : ''}
+                                ${denuncia.estado === 'revisada' ? `
+                                    <button class="btn-descartar" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'descartada')">Descartar</button>
+                                    <button class="btn-eliminar-comentario" onclick="eliminarComentarioDenunciado(${denuncia.comentario_id})">Eliminar comentario</button>
+                                ` : ''}
+                                ${denuncia.estado === 'descartada' ? `
+                                    <button class="btn-revisada" onclick="cambiarEstadoDenuncia(${denuncia.id}, 'revisada')">Marcar como revisada</button>
+                                ` : ''}
                             </div>
                         </div>
                     `;
                 });
                 
-                denunciasContainer.innerHTML = html;
+                container.innerHTML = html;
                 
             } catch (error) {
                 console.error('Error al cargar denuncias:', error);
-                showNotification('Error al cargar denuncias', 'error');
+                document.getElementById('denunciasContainer').innerHTML = `
+                    <div class="no-denuncias">
+                        <p>Error al cargar denuncias. Por favor, intenta de nuevo más tarde.</p>
+                    </div>
+                `;
             }
         }
         
@@ -444,6 +570,30 @@
             setTimeout(() => {
                 notification.style.display = 'none';
             }, 3000);
+        }
+
+        // Función para cerrar sesión
+        async function logoutUser() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                // Limpiar localStorage
+                localStorage.removeItem('currentUser');
+                
+                // Redirigir a la página principal
+                window.location.href = '/index.html';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
         }
     </script>
 </body>
