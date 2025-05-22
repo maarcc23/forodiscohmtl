@@ -236,8 +236,44 @@ async function updateDatabaseStructure() {
             await connection.query('ALTER TABLE venues ADD COLUMN follower_count INT DEFAULT 0');
             console.log('Columna follower_count agregada a la tabla venues');
         }
-    
         
+        // Verificar si la columna logo existe en la tabla venues
+        const [logoColumns] = await connection.query('SHOW COLUMNS FROM venues LIKE "logo"');
+        
+        // Si la columna logo no existe, agregarla
+        if (logoColumns.length === 0) {
+            await connection.query('ALTER TABLE venues ADD COLUMN logo VARCHAR(255)');
+            console.log('Columna logo agregada a la tabla venues');
+        }
+        
+        // Verificar si la columna contact_info existe en la tabla venues
+        const [contactColumns] = await connection.query('SHOW COLUMNS FROM venues LIKE "contact_info"');
+        
+        // Si la columna contact_info no existe, agregarla
+        if (contactColumns.length === 0) {
+            await connection.query('ALTER TABLE venues ADD COLUMN contact_info VARCHAR(255)');
+            console.log('Columna contact_info agregada a la tabla venues');
+        }
+        
+        // Verificar si la columna role existe en la tabla users
+        const [roleColumns] = await connection.query('SHOW COLUMNS FROM users LIKE "role"');
+        
+        // Si la columna role no existe, agregarla
+        if (roleColumns.length === 0) {
+            await connection.query('ALTER TABLE users ADD COLUMN role ENUM("user", "admin", "delegate") DEFAULT "user"');
+            console.log('Columna role agregada a la tabla users');
+        }
+        
+        // Verificar si la columna venue_id existe en la tabla users
+        const [venueIdColumns] = await connection.query('SHOW COLUMNS FROM users LIKE "venue_id"');
+        
+        // Si la columna venue_id no existe, agregarla
+        if (venueIdColumns.length === 0) {
+            await connection.query('ALTER TABLE users ADD COLUMN venue_id INT NULL');
+            await connection.query('ALTER TABLE users ADD CONSTRAINT fk_user_venue FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE SET NULL');
+            console.log('Columna venue_id y foreign key agregadas a la tabla users');
+        }
+    
         // Crear la tabla comments con la estructura correcta
         await connection.query(`
             CREATE TABLE IF NOT EXISTS comments (
@@ -401,24 +437,53 @@ app.get('/api/check-auth', async (req, res) => {
         try {
             console.log('Verificando autenticación para el usuario ID:', req.session.userId);
             
-            // Considerar como administradores a los usuarios con ID 1 o 4
-            // En un entorno de producción, esto debería obtenerse de la base de datos
+            // Verificar si el usuario es administrador (usuarios con ID 1 o 4)
             const isAdmin = req.session.userId === 1 || req.session.userId === 4;
-            console.log('Estado de administrador para el usuario:', isAdmin);
+            console.log('Estado de administrador:', isAdmin);
             
-            res.json({
-                authenticated: true,
-                username: req.session.username,
-                userId: req.session.userId,
-                isAdmin: isAdmin
-            });
+            // Verificar si el usuario es delegado y obtener información de su venue
+            const connection = await pool.getConnection();
+            try {
+                const [users] = await connection.query(
+                    'SELECT role, venue_id FROM users WHERE id = ?',
+                    [req.session.userId]
+                );
+                
+                let isDelegate = false;
+                let venueInfo = null;
+                
+                if (users.length > 0 && users[0].role === 'delegate' && users[0].venue_id) {
+                    isDelegate = true;
+                    
+                    // Obtener información de la venue asociada
+                    const [venues] = await connection.query(
+                        'SELECT id, name FROM venues WHERE id = ?',
+                        [users[0].venue_id]
+                    );
+                    
+                    if (venues.length > 0) {
+                        venueInfo = venues[0];
+                    }
+                }
+                
+                res.json({
+                    authenticated: true,
+                    username: req.session.username,
+                    userId: req.session.userId,
+                    isAdmin: isAdmin,
+                    isDelegate: isDelegate,
+                    venueInfo: venueInfo
+                });
+            } finally {
+                connection.release();
+            }
         } catch (error) {
             console.error('Error al verificar autenticación:', error);
             res.json({
                 authenticated: true,
                 username: req.session.username,
                 userId: req.session.userId,
-                isAdmin: req.session.userId === 1 || req.session.userId === 4 // Considerar como administradores a los usuarios con ID 1 o 4
+                isAdmin: req.session.userId === 1 || req.session.userId === 4 // Los usuarios con ID 1 o 4 son admin
             });
         }
     } else {
@@ -592,6 +657,7 @@ app.get('/api/user/forums', async (req, res) => {
 
         const connection = await pool.getConnection();
         try {
+            // Obtener los foros guardados por el usuario
             const [forums] = await connection.query(
                 `SELECT f.*, v.name as venue_name, v.location as venue_location 
                 FROM forums f 
@@ -2205,11 +2271,6 @@ app.delete('/api/admin/users/:userId', async (req, res) => {
         }
     }
 });
-// Servir archivos estáticos para cualquier otra ruta
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 // Endpoint para denunciar un comentario
 app.post('/api/comments/:commentId/denunciar', async (req, res) => {
     try {
@@ -2371,4 +2432,385 @@ app.put('/api/admin/denuncias/:denunciaId/estado', async (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+// Endpoint para obtener eventos de la venue del delegado
+app.get('/api/delegate/events', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Obtener eventos de la venue
+            const [events] = await connection.query(
+                'SELECT * FROM events WHERE venue_id = ? ORDER BY event_date DESC',
+                [venueId]
+            );
+            
+            res.json({ success: true, events });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener eventos:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener eventos' });
+    }
+});
+
+// Endpoint para crear un nuevo evento
+app.post('/api/delegate/events', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const { title, description, event_date } = req.body;
+        
+        if (!title || !description || !event_date) {
+            return res.status(400).json({ success: false, message: 'Todos los campos son requeridos' });
+        }
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Insertar el nuevo evento
+            const [result] = await connection.query(
+                'INSERT INTO events (title, description, event_date, venue_id, created_by) VALUES (?, ?, ?, ?, ?)',
+                [title, description, event_date, venueId, req.session.userId]
+            );
+            
+            res.status(201).json({ success: true, message: 'Evento creado exitosamente', eventId: result.insertId });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al crear evento:', error);
+        res.status(500).json({ success: false, message: 'Error al crear evento' });
+    }
+});
+
+// Endpoint para eliminar un evento
+app.delete('/api/delegate/events/:eventId', async (req, res) => {
+    try {
+        // Verificar si el usuario está autenticado
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+        
+        const eventId = req.params.eventId;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar si el usuario es delegado y obtener su venue_id
+            const [user] = await connection.query(
+                'SELECT role, venue_id FROM users WHERE id = ?',
+                [req.session.userId]
+            );
+            
+            if (user.length === 0 || user[0].role !== 'delegate' || !user[0].venue_id) {
+                return res.status(403).json({ success: false, message: 'Acceso denegado o no eres delegado de ninguna venue' });
+            }
+            
+            const venueId = user[0].venue_id;
+            
+            // Verificar que el evento pertenece a la venue del delegado
+            const [event] = await connection.query(
+                'SELECT id FROM events WHERE id = ? AND venue_id = ?',
+                [eventId, venueId]
+            );
+            
+            if (event.length === 0) {
+                return res.status(404).json({ success: false, message: 'Evento no encontrado o no pertenece a tu venue' });
+            }
+            
+            // Eliminar el evento
+            await connection.query(
+                'DELETE FROM events WHERE id = ?',
+                [eventId]
+            );
+            
+            res.json({ success: true, message: 'Evento eliminado exitosamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar evento:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar evento' });
+    }
+});
+
+// Endpoint para obtener todos los delegados (para el panel de administración)
+app.get('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todos los usuarios con rol de delegado y la información de sus venues
+            const [delegates] = await connection.query(`
+                SELECT u.id as user_id, u.username, u.email, v.id as venue_id, v.name as venue_name
+                FROM users u
+                JOIN venues v ON u.venue_id = v.id
+                WHERE u.role = 'delegate'
+                ORDER BY u.username
+            `);
+            
+            res.json({ success: true, delegates });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener delegados:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener delegados' });
+    }
+});
+
+// Endpoint para asignar un delegado a una venue
+app.post('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const { userId, venueId } = req.body;
+        
+        if (!userId || !venueId) {
+            return res.status(400).json({ success: false, message: 'Se requiere ID de usuario y ID de venue' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe
+            const [user] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            // Verificar que la venue existe
+            const [venue] = await connection.query('SELECT id FROM venues WHERE id = ?', [venueId]);
+            if (venue.length === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrada' });
+            }
+
+            // Actualizar el usuario a rol de delegado y asignar la venue
+            await connection.query(
+                'UPDATE users SET role = ?, venue_id = ? WHERE id = ?',
+                ['delegate', venueId, userId]
+            );
+            
+            res.json({ success: true, message: 'Delegado asignado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al asignar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al asignar delegado' });
+    }
+});
+
+// Endpoint para eliminar un delegado
+app.delete('/api/admin/delegates/:userId', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const userId = req.params.userId;
+        
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe y es delegado
+            const [user] = await connection.query(
+                'SELECT id FROM users WHERE id = ? AND role = ?',
+                [userId, 'delegate']
+            );
+            
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Delegado no encontrado' });
+            }
+
+            // Quitar el rol de delegado y la asignación de venue
+            await connection.query(
+                'UPDATE users SET role = ?, venue_id = NULL WHERE id = ?',
+                ['user', userId]
+            );
+            
+            res.json({ success: true, message: 'Delegado eliminado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al eliminar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar delegado' });
+    }
+});
+
+// Endpoint para obtener todos los usuarios (para el selector de delegados)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Obtener todos los usuarios que no son delegados
+            const [users] = await connection.query(`
+                SELECT id, username, email
+                FROM users
+                WHERE role != 'delegate' OR role IS NULL
+                ORDER BY username
+            `);
+            
+            res.json({ success: true, users });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener usuarios' });
+    }
+});
+
+// Endpoint para asignar un delegado a una venue
+app.post('/api/admin/delegates', async (req, res) => {
+    try {
+        // Verificar si el usuario es admin
+        if (!req.session.userId) {
+            return res.status(401).json({ success: false, message: 'No autorizado' });
+        }
+
+        // Verificar si el usuario es administrador
+        const isAdmin = req.session.userId === 1 || req.session.userId === 4;
+        if (!isAdmin) {
+            return res.status(403).json({ success: false, message: 'Acceso denegado' });
+        }
+
+        const { userId, venueId } = req.body;
+        
+        if (!userId || !venueId) {
+            return res.status(400).json({ success: false, message: 'Se requiere ID de usuario y ID de venue' });
+        }
+
+        const connection = await pool.getConnection();
+        try {
+            // Verificar que el usuario existe
+            const [user] = await connection.query('SELECT id FROM users WHERE id = ?', [userId]);
+            if (user.length === 0) {
+                return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+            }
+
+            // Verificar que la venue existe
+            const [venue] = await connection.query('SELECT id FROM venues WHERE id = ?', [venueId]);
+            if (venue.length === 0) {
+                return res.status(404).json({ success: false, message: 'Venue no encontrada' });
+            }
+
+            // Verificar qué columnas existen en la tabla users
+            const [columns] = await connection.query('SHOW COLUMNS FROM users');
+            const columnNames = columns.map(col => col.Field);
+            
+            // Construir la consulta según las columnas existentes
+            if (columnNames.includes('role')) {
+                // Si existe la columna 'role'
+                await connection.query(
+                    'UPDATE users SET role = ?, venue_id = ? WHERE id = ?',
+                    ['delegate', venueId, userId]
+                );
+            }
+            
+            // Si existe la columna 'role_id'
+            if (columnNames.includes('role_id')) {
+                // Obtener el ID del rol 'delegado'
+                const [delegateRole] = await connection.query(
+                    'SELECT id FROM roles WHERE name = ? OR name = ?',
+                    ['delegado', 'delegate']
+                );
+                
+                if (delegateRole.length > 0) {
+                    await connection.query(
+                        'UPDATE users SET role_id = ?, venue_id = ? WHERE id = ?',
+                        [delegateRole[0].id, venueId, userId]
+                    );
+                }
+            }
+            
+            // Si existe la columna 'role_1'
+            if (columnNames.includes('role_1')) {
+                await connection.query(
+                    'UPDATE users SET role_1 = ?, venue_id = ? WHERE id = ?',
+                    ['delegado', venueId, userId]
+                );
+            }
+            
+            res.json({ success: true, message: 'Delegado asignado correctamente' });
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error al asignar delegado:', error);
+        res.status(500).json({ success: false, message: 'Error al asignar delegado' });
+    }
+});
+
+// Servir archivos estáticos para cualquier otra ruta
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

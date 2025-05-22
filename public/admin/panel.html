@@ -9,7 +9,8 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            background-color: #121212;
+            color: white;
         }
 
         .navbar {
@@ -48,6 +49,7 @@
             border: 1px solid white;
             background: transparent;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .btn-logout:hover {
@@ -61,15 +63,18 @@
         }
 
         .panel-title {
-            color: #333;
+            color: #ff4b6e;
             margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
         }
 
         .club-form {
-            background: white;
+            background-color: rgba(255, 255, 255, 0.05);
             padding: 2rem;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
         }
 
         .form-group {
@@ -79,15 +84,17 @@
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            color: #666;
+            color: #ccc;
         }
 
         .form-group input,
         .form-group textarea {
             width: 100%;
             padding: 0.8rem;
-            border: 1px solid #ddd;
+            border: 1px solid #333;
             border-radius: 4px;
+            background-color: #222;
+            color: white;
             box-sizing: border-box;
         }
 
@@ -112,67 +119,68 @@
         }
 
         .clubs-list {
-            margin-top: 3rem;
+            margin-top: 2rem;
         }
 
         .club-card {
-            background: white;
+            background-color: rgba(255, 255, 255, 0.05);
             padding: 1.5rem;
             border-radius: 8px;
             margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
         }
 
         .club-card h3 {
-            color: #333;
-            margin: 0 0 1rem 0;
+            color: #ff4b6e;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .club-card p {
+            color: #ccc;
+            margin: 0.5rem 0;
+        }
+
+        .club-card strong {
+            color: white;
         }
 
         .error-message {
-            color: #ff4b6e;
+            color: #ff4b4b;
             margin-top: 1rem;
             display: none;
         }
 
         .success-message {
-            color: #28a745;
+            color: #4bff4b;
             margin-top: 1rem;
             display: none;
         }
 
         .admin-menu {
             margin-bottom: 2rem;
-            background-color: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        
+
         .admin-links {
             list-style: none;
             padding: 0;
             display: flex;
-            flex-wrap: wrap;
             gap: 1rem;
+            flex-wrap: wrap;
         }
-        
+
         .admin-link {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background-color: #f5f5f5;
-            color: #333;
-            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
+            text-decoration: none;
+            color: white;
             transition: all 0.3s ease;
         }
-        
-        .admin-link:hover {
-            background-color: #e0e0e0;
-        }
-        
-        .admin-link.active {
-            background-color: #ff4b6e;
-            color: white;
+
+        .admin-link:hover, .admin-link.active {
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
         }
     </style>
 </head>
@@ -193,6 +201,8 @@
             <ul class="admin-links">
                 <li><a href="/admin/panel.html" class="admin-link active">Gestión de Discotecas</a></li>
                 <li><a href="/admin/usuarios.html" class="admin-link">Gestión de Usuarios</a></li>
+                <li><a href="/admin/denuncias.html" class="admin-link">Gestión de Denuncias</a></li>
+                <li><a href="/admin/delegados.html" class="admin-link">Gestión de Delegados</a></li>
             </ul>
         </div>
 

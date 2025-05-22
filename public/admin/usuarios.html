@@ -10,7 +10,8 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
+            background-color: #121212;
+            color: white;
         }
 
         .navbar {
@@ -49,25 +50,27 @@
             border: 1px solid white;
             background: transparent;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .btn-logout:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
-
+        
         .admin-container {
             max-width: 1200px;
             margin: 2rem auto;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0 1rem;
+            background-color: transparent;
+            box-shadow: none;
         }
 
         .panel-title {
-            text-align: center;
+            color: #ff4b6e;
             margin-bottom: 2rem;
-            color: #333;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
         }
 
         .admin-menu {
@@ -78,31 +81,29 @@
             list-style: none;
             padding: 0;
             display: flex;
-            flex-wrap: wrap;
             gap: 1rem;
+            flex-wrap: wrap;
         }
         
         .admin-link {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background-color: #f5f5f5;
-            color: #333;
-            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
             border-radius: 4px;
+            text-decoration: none;
+            color: white;
             transition: all 0.3s ease;
         }
         
-        .admin-link:hover {
-            background-color: #e0e0e0;
-        }
-        
-        .admin-link.active {
-            background-color: #ff4b6e;
-            color: white;
+        .admin-link:hover, .admin-link.active {
+            background-color: rgba(255, 75, 110, 0.2);
+            color: #ff4b6e;
         }
 
         .users-list {
             margin-top: 2rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 8px;
         }
 
         .users-table {
@@ -114,16 +115,18 @@
         .users-table th, .users-table td {
             padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
         }
 
         .users-table th {
-            background-color: #f5f5f5;
+            background-color: rgba(0, 0, 0, 0.2);
             font-weight: bold;
+            color: #ff4b6e;
         }
 
         .users-table tr:hover {
-            background-color: #f9f9f9;
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
         .btn-delete {
@@ -154,33 +157,34 @@
         }
 
         .role-user {
-            background-color: #e0e0e0;
-            color: #333;
-        }
-
-        .error-message, .success-message {
-            padding: 1rem;
-            margin: 1rem 0;
-            border-radius: 4px;
-            display: none;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
         }
 
         .error-message {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
+            background-color: rgba(244, 67, 54, 0.1);
+            color: #ff4b4b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid rgba(244, 67, 54, 0.3);
         }
 
         .success-message {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #c8e6c9;
+            background-color: rgba(76, 175, 80, 0.1);
+            color: #4bff4b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
         .empty-message {
             text-align: center;
             padding: 2rem;
-            color: #888;
+            color: #ccc;
         }
 
         .confirmation-modal {
@@ -190,31 +194,42 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.7);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
 
         .modal-content {
-            background-color: white;
+            background-color: #1e1e1e;
             padding: 2rem;
             border-radius: 8px;
+            width: 90%;
             max-width: 500px;
             text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
-        .modal-actions {
+        .modal-content h3 {
+            color: #ff4b6e;
+            margin-top: 0;
+        }
+
+        .modal-content p {
+            margin-bottom: 2rem;
+            color: #ccc;
+        }
+
+        .modal-buttons {
             display: flex;
             justify-content: center;
             gap: 1rem;
-            margin-top: 1.5rem;
         }
 
         .btn-cancel {
-            background-color: #e0e0e0;
-            color: #333;
-            border: none;
+            background-color: transparent;
+            color: white;
+            border: 1px solid #ccc;
             border-radius: 4px;
             padding: 0.75rem 1.5rem;
             cursor: pointer;
@@ -222,7 +237,7 @@
         }
 
         .btn-cancel:hover {
-            background-color: #d0d0d0;
+            background-color: rgba(255, 255, 255, 0.1);
         }
 
         .btn-confirm {
@@ -246,8 +261,8 @@
         }
 
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: #ff4b6e;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #ff4b6e;
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -277,6 +292,8 @@
             <ul class="admin-links">
                 <li><a href="/admin/panel.html" class="admin-link">Gestión de Discotecas</a></li>
                 <li><a href="/admin/usuarios.html" class="admin-link active">Gestión de Usuarios</a></li>
+                <li><a href="/admin/denuncias.html" class="admin-link">Gestión de Denuncias</a></li>
+                <li><a href="/admin/delegados.html" class="admin-link">Gestión de Delegados</a></li>
             </ul>
         </div>
 
@@ -314,7 +331,7 @@
             <h3>Confirmar eliminación</h3>
             <p>¿Estás seguro de que deseas eliminar al usuario <span id="deleteUserName"></span>?</p>
             <p>Esta acción eliminará todos los comentarios asociados a este usuario y no se puede deshacer.</p>
-            <div class="modal-actions">
+            <div class="modal-buttons">
                 <button id="cancelDeleteBtn" class="btn-cancel">Cancelar</button>
                 <button id="confirmDeleteBtn" class="btn-confirm">Eliminar</button>
             </div>
@@ -471,7 +488,6 @@
             document.getElementById('deleteConfirmationModal').style.display = 'flex';
         }
 
-        // Función para eliminar un usuario
         // Función para eliminar un usuario
         async function deleteUser(userId) {
             const errorMessage = document.getElementById('errorMessage');

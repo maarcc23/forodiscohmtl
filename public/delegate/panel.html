@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Delegado - ForoDisco</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+
+        .navbar {
+            background-color: black;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar-brand {
+            color: #ff4b6e;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .username {
+            color: #ff4b6e;
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid white;
+            background: transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .delegate-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .panel-title {
+            color: #ff4b6e;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2rem;
+            text-shadow: 0 0 10px rgba(255, 75, 110, 0.5);
+        }
+
+        .venue-info {
+            background-color: rgba(255, 75, 110, 0.1);
+            border: 1px solid rgba(255, 75, 110, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .venue-name {
+            font-size: 1.5rem;
+            color: #ff4b6e;
+            margin-bottom: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #ff4b6e;
+            color: #ff4b6e;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .event-form {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #222;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            background-color: #ff4b6e;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #ff3459;
+        }
+
+        .events-list {
+            margin-top: 2rem;
+        }
+
+        .event-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .event-info h3 {
+            color: #ff4b6e;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .event-date {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-edit {
+            background-color: #4b6eff;
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #ff4b4b;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background-color: #3459ff;
+        }
+
+        .btn-delete:hover {
+            background-color: #ff3434;
+        }
+
+        .error-message {
+            color: #ff4b4b;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #4bff4b;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/index.html" class="navbar-brand">ForoDisco</a>
+        <div class="user-info">
+            <span>Delegado: <span class="username" id="delegateUsername"></span></span>
+            <button onclick="logoutUser()" class="btn-logout">Cerrar sesión</button>
+        </div>
+    </nav>
+
+    <div class="delegate-container">
+        <h1 class="panel-title">Panel de Delegado</h1>
+        
+        <div class="venue-info">
+            <div class="venue-name" id="venueName">Cargando información de la discoteca...</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="events">Gestión de Eventos</div>
+        </div>
+        
+        <div class="tab-content active" id="events-tab">
+            <div class="event-form">
+                <h2>Crear Nuevo Evento</h2>
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label for="title">Título del Evento</label>
+                        <input type="text" id="title" name="title" required placeholder="Ej: Noche de Techno">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Descripción</label>
+                        <textarea id="description" name="description" required placeholder="Describe el evento, DJs, ambiente, etc."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="event_date">Fecha del Evento</label>
+                        <input type="date" id="event_date" name="event_date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="event_time">Hora del Evento</label>
+                        <input type="time" id="event_time" name="event_time" required>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Crear Evento</button>
+                    <div id="errorMessage" class="error-message"></div>
+                    <div id="successMessage" class="success-message"></div>
+                </form>
+            </div>
+            
+            <div class="events-list">
+                <h2>Eventos de tu Discoteca</h2>
+                <div id="eventsList">
+                    <!-- Aquí se mostrarán los eventos -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            checkDelegateAuth();
+            loadEvents();
+        });
+
+        // Función para verificar si el usuario es delegado
+        async function checkDelegateAuth() {
+            try {
+                const response = await fetch('/api/check-auth', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.authenticated || !data.isDelegate) {
+                    // Redirigir a la página principal si no es delegado
+                    alert('No tienes permisos de delegado para acceder a esta página');
+                    window.location.href = '/index.html';
+                    return;
+                }
+                
+                // Mostrar nombre de usuario y venue
+                document.getElementById('delegateUsername').textContent = data.username;
+                if (data.venueInfo) {
+                    document.getElementById('venueName').textContent = data.venueInfo.name;
+                }
+                
+            } catch (error) {
+                console.error('Error al verificar autenticación:', error);
+                alert('Error al verificar permisos de delegado');
+                // Redirigir a la página principal
+                window.location.href = '/index.html';
+            }
+        }
+
+        // Cargar eventos de la venue del delegado
+        async function loadEvents() {
+            try {
+                const response = await fetch('/api/delegate/events', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Error al cargar eventos');
+                }
+                
+                const events = data.events || [];
+                const eventsList = document.getElementById('eventsList');
+                eventsList.innerHTML = '';
+                
+                if (events.length === 0) {
+                    eventsList.innerHTML = '<p>No hay eventos registrados para tu discoteca.</p>';
+                    return;
+                }
+
+                events.forEach(event => {
+                    const eventDate = new Date(event.event_date);
+                    const formattedDate = eventDate.toLocaleDateString('es-ES');
+                    
+                    const eventCard = document.createElement('div');
+                    eventCard.className = 'event-card';
+                    eventCard.innerHTML = `
+                        <div class="event-info">
+                            <h3>${event.title}</h3>
+                            <div class="event-date">${formattedDate}</div>
+                            <p>${event.description.substring(0, 100)}${event.description.length > 100 ? '...' : ''}</p>
+                        </div>
+                        <div class="event-actions">
+                            <button class="btn-edit" onclick="editEvent(${event.id})">Editar</button>
+                            <button class="btn-delete" onclick="deleteEvent(${event.id})">Eliminar</button>
+                        </div>
+                    `;
+                    eventsList.appendChild(eventCard);
+                });
+            } catch (error) {
+                console.error('Error al cargar eventos:', error);
+                document.getElementById('eventsList').innerHTML = '<p>Error al cargar los eventos: ' + error.message + '</p>';
+            }
+        }
+
+        // Función para crear un nuevo evento
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                const title = document.getElementById('title').value;
+                const description = document.getElementById('description').value;
+                const eventDate = document.getElementById('event_date').value;
+                const eventTime = document.getElementById('event_time').value;
+                
+                // Combinar fecha y hora
+                const dateTimeStr = `${eventDate} ${eventTime}:00`;
+                
+                const response = await fetch('/api/delegate/events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title,
+                        description,
+                        event_date: dateTimeStr
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Error al crear el evento');
+                }
+                
+                // Mostrar mensaje de éxito
+                successMessage.textContent = 'Evento creado correctamente';
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                
+                // Limpiar formulario
+                document.getElementById('eventForm').reset();
+                
+                // Recargar la lista de eventos
+                loadEvents();
+                
+            } catch (error) {
+                console.error('Error al crear evento:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+        });
+
+        // Función para editar un evento
+        function editEvent(eventId) {
+            // Implementar la funcionalidad de edición
+            alert('Función de edición para el evento ID: ' + eventId + ' (por implementar)');
+        }
+
+        // Función para eliminar un evento
+        async function deleteEvent(eventId) {
+            if (confirm('¿Estás seguro de que deseas eliminar este evento?')) {
+                try {
+                    const response = await fetch(`/api/delegate/events/${eventId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.message || 'Error al eliminar el evento');
+                    }
+                    
+                    // Recargar la lista de eventos
+                    loadEvents();
+                    
+                } catch (error) {
+                    console.error('Error al eliminar evento:', error);
+                    alert('Error al eliminar el evento: ' + error.message);
+                }
+            }
+        }
+
+        // Función de logout
+        async function logoutUser() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                // Redirigir a la página principal
+                window.location.href = '/index.html';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                alert('Error al cerrar sesión. Por favor, intenta de nuevo.');
+            }
+        }
+    </script>
+</body>
+</html>
